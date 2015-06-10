@@ -3,9 +3,8 @@
 import sys
 import numpy as np
 import matplotlib.pylab as plt
-import datetime as dt
 import string
-from astropy.time import Time
+from astropy.time import Time,TimeDelta
 import warnings
 
 # Crab frequency 
@@ -45,16 +44,8 @@ def rms(sequence):
 def getStartTime(fileName):
     # Gets start time of trial based on file name
 
-    dateString=fileName.split('foldspec')[1]
-    year=int(dateString[1:5])
-    month=int(dateString[6:8])
-    day=int(dateString[9:11])
-    hour=int(dateString[12:14])
-    minute=int(dateString[15:17])
-    second=int(dateString[18:20])
-    millisecond=int(dateString[21:24])
-    return dt.datetime(year,month,day,hour=hour,minute=minute,
-                       second=second,microsecond=1000*millisecond)
+    dateString=fileName.split('foldspec')[1][1:24]
+    return Time(dateString,format='isot',scale='utc')
 
 def getDeltaT(fileName):
     # Gets duration of trial based on file name
@@ -75,7 +66,7 @@ def nanMedian(numArray):
 def getTime(index,binWidth,startTime):
     # Get time corresponding to 'index' based on 'startTime' and 'binWidth'
     
-    return (startTime+dt.timedelta(seconds=index*binWidth))
+    return (startTime+TimeDelta(index*binWidth,format='sec'))
 
 def getPeriod(pulseLocation,binWidth,endIndex):
     # Get approximate period worth of bins centered at 'pulseLocation'
@@ -185,8 +176,8 @@ if __name__ == "__main__":
     print "\tTelescope: ", telescope
     print "\tnBins: ", nBins
     print "\tResolution: ", binWidth, "s"
-    print "\tStart time: ", startTime.time()
-    print "\tEnd time: ", endTime.time()
+    print "\tStart time: ", startTime.iso
+    print "\tEnd time: ", endTime.iso
     print "\tLower bound: ", threshold, 'sigma \n'
     print "Looking for "+str(nPulses)+" brightest giant pulses."
     print "Pulses: \n"
@@ -207,14 +198,13 @@ if __name__ == "__main__":
             print "Not enough giant pulses found!\n"
             break
 
-        # Get pulse time in UTC and mjd formats
+        # Get pulse time 
         pulseTime=getTime(currentMaxLoc,binWidth,startTime)
-        pulseTimeMJD=Time(pulseTime).mjd
 
         # Output pulse information
         print str(j+1)+'.\tIndex = '+str(currentMaxLoc)      
-        print '\tTime = '+str(pulseTime.time())
-        print '\tTime (mjd) = '+str(pulseTimeMJD)
+        print '\tTime = '+str(pulseTime.iso)
+        print '\tTime (mjd) = '+str(pulseTime.mjd)
         print '\tPeak pulse height = '+str(round(currentMax,1))+' sigma\n'
         
         ###  Begin plotting ###
