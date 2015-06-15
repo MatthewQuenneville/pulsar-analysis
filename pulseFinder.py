@@ -15,6 +15,9 @@ crabFreq=29.946923
 # Set number of pulses to find
 nPulses=3
 
+# Rebin to 10000 samples per second for searching
+rebinTimeSeries=True
+
 # Set noise threshold in number of standard deviations
 threshold=5
 
@@ -35,6 +38,27 @@ def getTelescope(fileName):
     else:
         print "Telescope not recognized."
         return 'Unknown'
+
+def rebin(f,ic,nBins=10000):
+    nBinsOld=ic.shape[2]
+    if nBins>nBinsOld:
+        print "Error, can't rebin to larger number of bins."
+        print "Keeping current dimensions."
+        return f, ic
+    nBinsCombine=nBinsOld/nBins
+    if not nBinsOld%nBins==0.:
+        print "Error, only an integer number of bins can be combined."
+        print nBinsOld,nBins,nBinsOld%nBins
+        sys.exit()
+        
+    if f.shape[-1]==4:
+        f_new=f.reshape(f.shape[0],f.shape[1],nBins,nBinsCombine,4).sum(-2)
+    else:
+        f_new=f.reshape(f.shape[0],f.shape[1],nBins,nBinsCombine).sum(-1)
+    ic_new=ic.reshape(ic.shape[0],ic.shape[1],nBins,nBinsCombine).sum(-1)
+    
+    return f_new,ic_new
+
 
 def rms(sequence):
     # Gets root-mean square of sequence
@@ -76,9 +100,8 @@ def getPeriod(pulseLocation,binWidth,endIndex):
     Interval=range(pulseLocation-nBins/2, pulseLocation+nBins/2)
     return [i for i in Interval if 0<=i<=endIndex]
 
-def getTimeSeries(f,ic,nNoiseBins):
+def getTimeSeries(f,ic,nNoiseBins=1):
     # Gets profile time series over which to search for giant pulses
-
     if f.shape[-1] == 4:
         n = f[..., pol_select].sum(-1)[0,:,:]
     else:
@@ -92,6 +115,10 @@ def getTimeSeries(f,ic,nNoiseBins):
     nn = n / n_median[:,np.newaxis] - 1.
 
     timeSeries = nn.sum(0)
+    #plt.figure()
+    #plt.plot(timeSeries[int(0.6*len(timeSeries)):int(0.605*len(timeSeries))])
+    #plt.show()
+    #sys.exit()
     timeSeries = timeSeries[~np.isnan(timeSeries)]
     noiseBins=[int(i) for i in np.linspace(0,len(timeSeries),nNoiseBins+1)]
     noise=[rms(timeSeries[noiseBins[i]:noiseBins[i+1]]) 
@@ -103,11 +130,11 @@ def getTimeSeries(f,ic,nNoiseBins):
 
     return timeSeries
 
-def getPulses(timeSeries,threshold=5):
+def getPulses(timeSeries,threshold=5,binWidth=None):
     # Gets a list of all pulses higher than the noise threshold
-
     nBins=len(timeSeries)
-
+    if binWidth==None:
+        binWidth=1.0/nBins
     # Define a 'mask' such that previously found pulses are ignored 
     mask=np.ones(len(timeSeries))
 
@@ -143,11 +170,15 @@ if __name__ == "__main__":
     f = np.load(sys.argv[1])
     ic = np.load(sys.argv[2] if len(sys.argv) == 3 else
                  sys.argv[1].replace('foldspec', 'icount'))
-    
+
     # Get basic run attributes
     telescope=getTelescope(sys.argv[1])
     startTime=getStartTime(sys.argv[1])
     deltat=getDeltaT(sys.argv[1])
+    
+    # Rebin to 10000 bins per second
+    if rebinTimeSeries:
+        f,ic=rebin(f,ic,10000*deltat)
 
     # Set nNoiseBins to one per second if invalid value is given
     if nNoiseBins<1:
