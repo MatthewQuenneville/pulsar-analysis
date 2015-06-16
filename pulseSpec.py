@@ -105,7 +105,7 @@ if __name__ == "__main__":
         dynamicSpec[obsList[-1]]=dynspec(f,ic,indices=pulseRange,
                                          normChan=True)
         freqBand[obsList[-1]]=getFrequencyBand(telescope)
-        pulseTimes[obsList[-1]]=pf.getTime(pulseList[0][1],binWidth,
+        pulseTimes[obsList[-1]]=pf.getTime(pulseList[0][0],searchRes,
                                            startTime).iso[:-3]
 
     # Determine aspect ratio for plotting
