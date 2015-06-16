@@ -16,10 +16,13 @@ trailWidth=0.0003
 searchRes=1.0/100000
 
 # Use same intensity color scale
-sameColorScale=True
+sameColorScale=False
 
 # Scale data sets to have same intensity
-scaleData=True
+scaleData=False
+
+# Normalize intensity in frequency channels
+normChan=False
 
 def dynspec(f,ic,indices=None,normChan=False):
     # Finds the dynamic spectrum for foldspec and icounts arrays 'f'
@@ -87,7 +90,9 @@ if __name__ == "__main__":
             sys.exit()
 
         # Rebin to find giant pulses
-        f_rebin,ic_rebin=pf.rebin(f,ic,int(round(deltat/searchRes)))
+        nSearchBins=min(int(round(deltat/binWidth)),
+                        int(round(deltat/searchRes)))
+        f_rebin,ic_rebin=pf.rebin(f,ic,nSearchBins)
         timeSeries=pf.getTimeSeries(f_rebin,ic_rebin)
         pulseList=pf.getPulses(timeSeries,searchRes)
         try:
@@ -103,7 +108,7 @@ if __name__ == "__main__":
         
         # Add entries to dynamic spectra and frequency band dictionaries
         dynamicSpec[obsList[-1]]=dynspec(f,ic,indices=pulseRange,
-                                         normChan=True)
+                                         normChan=normChan)
         freqBand[obsList[-1]]=getFrequencyBand(telescope)
         pulseTimes[obsList[-1]]=pf.getTime(pulseList[0][0],searchRes,
                                            startTime).iso[:-3]
