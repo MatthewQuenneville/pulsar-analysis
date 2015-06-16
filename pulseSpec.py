@@ -221,25 +221,4 @@ if __name__ == "__main__":
             plt.tight_layout()
         
         plt.show()
-        """
-            # Plot dynamic spectra on subplot, with color bars and labels
-            fig.add_subplot(121+j)
-            im=plt.imshow(dynamicSpec[jobs][:,:,i],origin='lower',
-                       interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                       extent=[-leadBins,trailBins-1,
-                                freqBand[jobs][0],freqBand[jobs][1]],
-                       aspect=aspect,vmin=vmin,vmax=vmax)
-            plt.title(pulseTimes[jobs]+'\n'+jobs[1]+' ( Pol '+str(i)+' )')
-            plt.xlabel('Time')
-            plt.ylabel('Frequency')
-            if not sameColorScale:
-                plt.colorbar()
-                
-        if sameColorScale:
-            #fig.add_subplot(155)
-            plt.colorbar()
 
-        # Prevent overlapping and show figure
-        #fig.tight_layout()
-        plt.show()
-        """
