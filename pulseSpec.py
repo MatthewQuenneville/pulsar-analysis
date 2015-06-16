@@ -16,10 +16,10 @@ trailWidth=0.0003
 searchRes=1.0/100000
 
 # Use same intensity color scale
-sameColorScale=False
+sameColorScale=True
 
-# Scale Jodrell Bank to same intensity as GMRT
-scaleJB=True
+# Scale data sets to have same intensity
+scaleData=True
 
 def dynspec(f,ic,indices=None,normChan=False):
     # Finds the dynamic spectrum for foldspec and icounts arrays 'f'
@@ -57,13 +57,15 @@ def getFrequencyBand(telescope):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print "Usage: %s foldspec_jb foldspec_gmrt" % sys.argv[0]
-        # Run the code as eg: ./plotspec.py foldspec_jb.npy foldspec_gmrt.py.
+        print "Usage: %s foldspec1 foldspec2" % sys.argv[0]
+        # Run the code as eg: ./plotspec.py foldspec1.npy foldspec2.py.
         sys.exit(1)
     
     # Declare frequency band and dynamic spectra dictionaries
     dynamicSpec={}
     freqBand={}
+    obsList=[]
+    pulseTimes={}
 
     # Loop through JB and GMRT files
     for ifoldspec in sys.argv[1:]:
@@ -75,6 +77,8 @@ if __name__ == "__main__":
         # Get run information
         deltat=pf.getDeltaT(ifoldspec)
         telescope=pf.getTelescope(ifoldspec)
+        startTime=pf.getStartTime(ifoldspec)
+        obsList.append((startTime,telescope))
         binWidth=float(deltat)/f.shape[2]
 
         # Check for polarization data
@@ -98,42 +102,53 @@ if __name__ == "__main__":
         pulseRange=range(largestPulse-leadBins,largestPulse+trailBins)
         
         # Add entries to dynamic spectra and frequency band dictionaries
-        dynamicSpec[telescope]=dynspec(f,ic,indices=pulseRange,normChan=True)
-        freqBand[telescope]=getFrequencyBand(telescope)
+        dynamicSpec[obsList[-1]]=dynspec(f,ic,indices=pulseRange,
+                                         normChan=True)
+        freqBand[obsList[-1]]=getFrequencyBand(telescope)
+        pulseTimes[obsList[-1]]=pf.getTime(pulseList[0][1],binWidth,
+                                           startTime).iso[:-3]
 
     # Determine aspect ratio for plotting
-    aspect=(leadBins+trailBins-1)/(
-        freqBand["Jodrell Bank"][1]-freqBand["Jodrell Bank"][0])
+    freqRange=[b-a for (a,b) in freqBand.values()]
+    maxFreqRange=max(freqRange)
+    aspect=2*(leadBins+trailBins-1)/maxFreqRange
 
     # Loop through polarisations to plot
     for i in range(4):
 
         fig = plt.figure()
-        if scaleJB:
-            scaleFactor=np.amax(dynamicSpec["GMRT"][:,:,(0,3)].sum(-1))/np.amax(
-                dynamicSpec["Jodrell Bank"][:,:,(0,3)].sum(-1))
-            dynamicSpec["Jodrell Bank"]*=scaleFactor
+        
+        # Apply scaling factor to second data set
+        if scaleData:
+            scaleFactor=np.amax(
+                dynamicSpec[obsList[0]][:,:,(0,3)].sum(-1))/np.amax(
+                dynamicSpec[obsList[1]][:,:,(0,3)].sum(-1))
+            dynamicSpec[obsList[1]]*=scaleFactor
             
 
         # Loop through telescopes
-        for j,jtel in enumerate(["Jodrell Bank","GMRT"]):
+        for j,jobs in enumerate(obsList):
             
             # Declare max and min z axis values for plotting
             if sameColorScale:
-                vmin=np.amin(dynamicSpec["GMRT"][:,:,i])
-                vmax=np.amax(dynamicSpec["GMRT"][:,:,i])
+                vmin=min(
+                    np.amin(dynamicSpec[obsList[0]][:,:,i]),
+                    np.amin(dynamicSpec[obsList[1]][:,:,i]))
+                vmax=max(
+                    np.amax(dynamicSpec[obsList[0]][:,:,i]),
+                    np.amax(dynamicSpec[obsList[1]][:,:,i]))
             else:
-                vmin=np.amin(dynamicSpec[jtel][:,:,i])
-                vmax=np.amax(dynamicSpec[jtel][:,:,i])
+                vmin=np.amin(dynamicSpec[jobs][:,:,i])
+                vmax=np.amax(dynamicSpec[jobs][:,:,i])
 
             # Plot dynamic spectra on subplot, with color bars and labels
             fig.add_subplot(121+j)
-            plt.imshow(dynamicSpec[jtel][:,:,i],interpolation='nearest',
-                       origin='lower',cmap=plt.get_cmap('Greys'),
+            plt.imshow(dynamicSpec[jobs][:,:,i],origin='lower',
+                       interpolation='nearest',cmap=plt.get_cmap('Greys'),
                        extent=[-leadBins,trailBins-1,
-                                freqBand[jtel][0],freqBand[jtel][1]],
+                                freqBand[jobs][0],freqBand[jobs][1]],
                        aspect=aspect,vmin=vmin,vmax=vmax)
-            plt.title(jtel+' ( Pol '+str(i)+' )')
+            plt.title(pulseTimes[jobs]+'\n'+jobs[1]+' ( Pol '+str(i)+' )')
             plt.xlabel('Time')
             plt.ylabel('Frequency')
             if not sameColorScale:
