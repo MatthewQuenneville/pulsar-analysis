@@ -41,12 +41,10 @@ def dynSpec(f,ic,indices=None,normChan=False):
     else:
         n=f[:,:,indices].sum(0)/(ic[:,:,indices].sum(0)[:,:])
 
-    # Normalize flux by median in each frequency bin
+    # Normalize flux by noise in each frequency bin
     if normChan:        
-        n_median=np.median(n,axis=1)
-        if f.shape[-1]==4:
-            n_median[:,(1,2)]=1
-        n/=n_median[:,np.newaxis,...]
+        n_noise=np.std(n,axis=1)
+        n/=n_noise[:,np.newaxis,...]
         
     return n
 
