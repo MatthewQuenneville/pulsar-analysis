@@ -12,11 +12,11 @@ import warnings
 # is just used for plotting, so approximate is fine
 crabFreq=29.946923 
 
+# Pulse width in seconds 
+pulseWidth=0.0001 
+
 # Set number of pulses to find
 nPulses=3
-
-# Rebin to 10000 samples per second for searching
-rebinTimeSeries=True
 
 # Set noise threshold in number of standard deviations
 threshold=5
@@ -40,17 +40,23 @@ def getTelescope(fileName):
         return 'Unknown'
 
 def rebin(f,ic,nBins=10000):
+    # Rebin 'f' and 'ic' to 'nBins' phase bins
+
+    # Check that requested rebin is to coarser resoution
     nBinsOld=ic.shape[2]
     if nBins>nBinsOld:
         print "Error, can't rebin to larger number of bins."
         print "Keeping current dimensions."
         return f, ic
+
+    # Check that integer number of bins will be combined
     nBinsCombine=nBinsOld/nBins
     if not nBinsOld%nBins==0.:
         print "Error, only an integer number of bins can be combined."
         print nBinsOld,nBins,nBinsOld%nBins
         sys.exit()
         
+    # Perform rebinning on f and ic
     if f.shape[-1]==4:
         f_new=f.reshape(f.shape[0],f.shape[1],nBins,nBinsCombine,4).sum(-2)
     else:
@@ -107,19 +113,20 @@ def getTimeSeries(f,ic,nNoiseBins=1):
     else:
         n = f[0,:,:]
         
+    # Ignore divide by 0 warnings, and deal with Nan's in array later
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         n /= ic[0,:,:]
 
+    # Normalize by median flux in each frequency bin
     n_median = nanMedian(n)
     nn = n / n_median[:,np.newaxis] - 1.
 
+    # Sum over frequency and remove Nan entries
     timeSeries = nn.sum(0)
-    #plt.figure()
-    #plt.plot(timeSeries[int(0.6*len(timeSeries)):int(0.605*len(timeSeries))])
-    #plt.show()
-    #sys.exit()
     timeSeries = timeSeries[~np.isnan(timeSeries)]
+
+    # Find noise bins, and normlize by noise in each
     noiseBins=[int(i) for i in np.linspace(0,len(timeSeries),nNoiseBins+1)]
     noise=[rms(timeSeries[noiseBins[i]:noiseBins[i+1]]) 
            for i in range(nNoiseBins)]
@@ -130,9 +137,34 @@ def getTimeSeries(f,ic,nNoiseBins=1):
 
     return timeSeries
 
+def resolvePulse(timeSeries,pulseIndex,binWidth=None,searchRadius=1.0/10000):
+    # Get pulse center to higher resolution
+
+    nBins=len(timeSeries)
+    if binWidth==None:
+        binWidth=1.0/nBins
+
+    # Ensure there are enough bins to further resolve pulse
+    binRadius=int(round(searchRadius/binWidth))
+    if binRadius==0:
+        print "Warning, not enough bins available to further resolve pulse."
+        return pulseIndex
+    
+    # Get range of bins to search
+    binRange=range(pulseIndex-binRadius,pulseIndex+binRadius+1)  
+
+    # Get the ranges to average over
+    aveRanges=[[j for j in binRange if abs(i-j)*binWidth<pulseWidth/2] for i in binRange]
+
+    # Get smoothed time series, and return maximum
+    smoothTimeSeries=np.array([timeSeries[i].mean() for i in aveRanges])
+    return np.argmax(smoothTimeSeries)+pulseIndex-binRadius
+
 def getPulses(timeSeries,threshold=5,binWidth=None):
     # Gets a list of all pulses higher than the noise threshold
+
     nBins=len(timeSeries)
+
     if binWidth==None:
         binWidth=1.0/nBins
     # Define a 'mask' such that previously found pulses are ignored 
@@ -170,15 +202,13 @@ if __name__ == "__main__":
     f = np.load(sys.argv[1])
     ic = np.load(sys.argv[2] if len(sys.argv) == 3 else
                  sys.argv[1].replace('foldspec', 'icount'))
-
+    
     # Get basic run attributes
     telescope=getTelescope(sys.argv[1])
     startTime=getStartTime(sys.argv[1])
     deltat=getDeltaT(sys.argv[1])
     
-    # Rebin to 10000 bins per second
-    if rebinTimeSeries:
-        f,ic=rebin(f,ic,10000*deltat)
+    #f,ic=rebin(f,ic,nBins=10000)
 
     # Set nNoiseBins to one per second if invalid value is given
     if nNoiseBins<1:
@@ -213,8 +243,21 @@ if __name__ == "__main__":
     print "Looking for "+str(nPulses)+" brightest giant pulses."
     print "Pulses: \n"
 
+    # Find pulses with 10000 or fewer bins. Further resolve pulses if
+    # finer binning is present.
+    if f.shape[2]>10000:
+        f_rebin,ic_rebin=rebin(f,ic,nBins=10000)
+        timeSeries_rebin=getTimeSeries(f_rebin,ic_rebin,nNoiseBins)
+        pulseList=getPulses(timeSeries_rebin,threshold=threshold)
+        pulseList=[(resolvePulse(
+                    timeSeries,pos*f.shape[2]/10000,binWidth=binWidth,
+                    searchRadius=1.0/10000),height) 
+                   for (pos,height) in pulseList]
+    else:
+        pulseList=getPulses(timeSeries,threshold=threshold)
+
     # Find pulses
-    pulseList=getPulses(timeSeries,threshold=threshold)
+    #pulseList=getPulses(timeSeries,threshold=threshold)
 
     # Define the axis maximum to use for plotting
     ymax=1.3*np.amax(timeSeries) 

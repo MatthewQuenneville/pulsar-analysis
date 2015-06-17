@@ -13,7 +13,7 @@ trailWidth=0.0003
 
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.
-searchRes=1.0/100000
+searchRes=1.0/10000
 
 # Normalize intensity in frequency channels
 normChan=True
@@ -70,14 +70,19 @@ if __name__ == "__main__":
     binWidth=float(deltat)/f.shape[2]
     freqBand=getFrequencyBand(telescope)
 
-    # Rebin to find giant pulses
+    # Rebin to find giant pulses, then resolve pulses with finer binning
     nSearchBins=min(int(round(deltat/binWidth)),
                     int(round(deltat/searchRes)))
     f_rebin,ic_rebin=pf.rebin(f,ic,nSearchBins)
-    timeSeries=pf.getTimeSeries(f_rebin,ic_rebin)
-    pulseList=pf.getPulses(timeSeries,searchRes)
+    timeSeries_rebin=pf.getTimeSeries(f_rebin,ic_rebin)
+    timeSeries=pf.getTimeSeries(f,ic)
+    pulseList=pf.getPulses(timeSeries_rebin,searchRes)
+    pulseList=[(pf.resolvePulse(
+                timeSeries,int(pos*searchRes/binWidth),
+                binWidth=binWidth,searchRadius=1.0/10000),height) 
+               for (pos,height) in pulseList]
     try:
-        largestPulse=int(pulseList[0][0]*searchRes/binWidth)
+        largestPulse=pulseList[0][0]
     except IndexError:
         print "Error, no giant pulse found in "+telescope+" for start time:"
         print startTime.iso
