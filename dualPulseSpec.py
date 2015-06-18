@@ -17,7 +17,7 @@ trailWidth=0.0003
 searchRes=1.0/10000
 
 # Use same intensity color scale
-sameColorScale=True
+sameColorScale=False
 
 # Scale data sets to have same intensity
 scaleData=False
@@ -39,36 +39,58 @@ if __name__ == "__main__":
     pulseTimes={}
 
     # Loop through JB and GMRT files
-    for ifoldspec in sys.argv[1:]:
+    for ifilename in sys.argv[1:]:
         
         # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
-        f = np.load(ifoldspec)
-        ic = np.load(ifoldspec.replace('foldspec', 'icount'))
-        
+
         # Get run information
-        deltat=pf.getDeltaT(ifoldspec)
-        telescope=pf.getTelescope(ifoldspec)
-        startTime=pf.getStartTime(ifoldspec)
+        deltat=pf.getDeltaT(ifilename)
+        telescope=pf.getTelescope(ifilename)
+        startTime=pf.getStartTime(ifilename)
         obsList.append((startTime,telescope))
-        binWidth=float(deltat)/f.shape[2]
-        freqBand[obsList[-1]]=ps.getFrequencyBand(telescope)
+        freqBand[obsList[-1]]=pf.getFrequencyBand(telescope)
+
+        if 'foldspec' in ifilename:
+            f = np.load(ifilename)
+            ic = np.load(ifilename.replace('foldspec', 'icount'))
+
+            # Collapse time axis
+            f=f[0,...]
+            ic=ic[0,...]
+
+            # Find populated bins
+            fullList=np.flatnonzero(ic.sum(0).sum(0))
+            w=f/ic[...,np.newaxis]
+
+            binWidth=deltat/f.shape[1]
+
+        elif 'waterfall' in ifilename:
+            w=np.load(ifilename)
+            w=np.swapaxes(w,0,1)
+            fullList=range(w.shape[1])
+            binWidth=pf.getWaterfallBinWidth(telescope,w.shape[0])
+
+        else:
+            print "Error, unrecognized file type."
+            sys.exit()
 
         # Check for polarization data
-        if not f.shape[-1]==4:
+        if not w.shape[-1]==4:
             print "Error, polarization data is missing for "+telescope+"."
             sys.exit()
 
         # Rebin to find giant pulses
-        nSearchBins=min(int(round(deltat/binWidth)),
-                        int(round(deltat/searchRes)))
-        f_rebin,ic_rebin=pf.rebin(f,ic,nSearchBins)
-        timeSeries_rebin=pf.getTimeSeries(f_rebin,ic_rebin)
-        timeSeries=pf.getTimeSeries(f,ic)
-        pulseList=pf.getPulses(timeSeries_rebin,searchRes)
-        pulseList=[(pf.resolvePulse(
-                timeSeries,int(pos*searchRes/binWidth),
-                binWidth=binWidth,searchRadius=1.0/10000),height) 
-               for (pos,height) in pulseList]
+        nSearchBins=min(w.shape[1],int(round(deltat/searchRes)))
+    
+        w_rebin=pf.rebin(w,nSearchBins)
+        timeSeries_rebin=pf.getTimeSeries(w_rebin)
+        timeSeries=pf.getTimeSeries(w)
+        pulseList=pf.getPulses(timeSeries_rebin,binWidth=searchRes)
+        if nSearchBins<w.shape[1]:
+            pulseList=[(pf.resolvePulse(
+                        timeSeries,int(pos*w.shape[1]/nSearchBins),
+                        binWidth=binWidth,searchRadius=1.0/10000),height) 
+                       for (pos,height) in pulseList]
         try:
             largestPulse=pulseList[0][0]
         except IndexError:
@@ -82,7 +104,7 @@ if __name__ == "__main__":
         pulseRange=range(largestPulse-leadBins,largestPulse+trailBins)
         
         # Add entries to dynamic spectra and frequency band dictionaries
-        dynamicSpec[obsList[-1]]=ps.dynSpec(f,ic,indices=pulseRange,
+        dynamicSpec[obsList[-1]]=ps.dynSpec(w,indices=pulseRange,
                                          normChan=normChan)
         pulseTimes[obsList[-1]]=(pf.getTime(pulseList[0][0],binWidth,
                                            startTime).iso[:-3]).split()[-1]

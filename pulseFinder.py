@@ -39,32 +39,38 @@ def getTelescope(fileName):
         print "Telescope not recognized."
         return 'Unknown'
 
-def rebin(f,ic,nBins=10000):
-    # Rebin 'f' and 'ic' to 'nBins' phase bins
+def getFrequencyBand(telescope):
+    # Returns frequency band of a given telescope
+
+    if telescope=="Jodrell Bank":
+        return (605.,615.)
+    elif telescope=="GMRT":
+        return (601.66666,618.33334)
+
+def getWaterfallBinWidth(telescope,nChan):
+    # Returns waterfall bin width for a given telescope observation
+    # with 'nChan' channels
+
+    freqBand=getFrequencyBand(telescope)
+    chanWidth=1e6*(freqBand[1]-freqBand[0])/nChan
+    return 1/chanWidth
+
+def rebin(w,nBins=10000):
+    # Rebin 'w' to 'nBins' phase bins
 
     # Check that requested rebin is to coarser resoution
-    nBinsOld=ic.shape[2]
+    nBinsOld=w.shape[1]
     if nBins>nBinsOld:
         print "Error, can't rebin to larger number of bins."
         print "Keeping current dimensions."
-        return f, ic
+        return w
 
-    # Check that integer number of bins will be combined
-    nBinsCombine=nBinsOld/nBins
-    if not nBinsOld%nBins==0.:
-        print "Error, only an integer number of bins can be combined."
-        print nBinsOld,nBins,nBinsOld%nBins
-        sys.exit()
-        
-    # Perform rebinning on f and ic
-    if f.shape[-1]==4:
-        f_new=f.reshape(f.shape[0],f.shape[1],nBins,nBinsCombine,4).sum(-2)
-    else:
-        f_new=f.reshape(f.shape[0],f.shape[1],nBins,nBinsCombine).sum(-1)
-    ic_new=ic.reshape(ic.shape[0],ic.shape[1],nBins,nBinsCombine).sum(-1)
+    nBinsCombine=float(nBinsOld)/nBins
+    binEdges=[i*nBinsCombine for i in range(nBins+1)]
+    w=np.array([w[:,np.floor(binEdges[i]):np.floor(binEdges[i+1]),...].sum(1) for i in range(nBins)])
+    w=np.swapaxes(w,0,1)
     
-    return f_new,ic_new
-
+    return w
 
 def rms(sequence):
     # Gets root-mean square of sequence
@@ -73,8 +79,10 @@ def rms(sequence):
 
 def getStartTime(fileName):
     # Gets start time of trial based on file name
-
-    dateString=fileName.split('foldspec')[1][1:24]
+    if 'foldspec' in fileName:
+        dateString=fileName.split('foldspec')[1][1:24]
+    else:
+        dateString=fileName.split('waterfall')[1][1:24]
     return Time(dateString,format='isot',scale='utc',precision=6)
 
 def getDeltaT(fileName):
@@ -106,17 +114,13 @@ def getPeriod(pulseLocation,binWidth,endIndex):
     Interval=range(pulseLocation-nBins/2, pulseLocation+nBins/2)
     return [i for i in Interval if 0<=i<=endIndex]
 
-def getTimeSeries(f,ic,nNoiseBins=1):
+def getTimeSeries(w,nNoiseBins=1):
     # Gets profile time series over which to search for giant pulses
-    if f.shape[-1] == 4:
-        n = f[..., pol_select].sum(-1)[0,:,:]
+    if w.shape[-1] == 4:
+        n = w[..., pol_select].sum(-1)
     else:
-        n = f[0,:,:]
+        n = w
         
-    # Ignore divide by 0 warnings, and deal with Nan's in array later
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        n /= ic[0,:,:]
 
     # Normalize by median flux in each frequency bin
     n_median = nanMedian(n)
@@ -194,35 +198,54 @@ def getPulses(timeSeries,threshold=5,binWidth=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print "Usage: %s foldspec icounts" % sys.argv[0]
-        # Run the code as: ./pulseFinder.py data_foldspec.npy data_icounts.py.
+        print "Usage: %s foldspec" % sys.argv[0]
+        # Run the code as: ./pulseFinder.py data_foldspec.npy.
         sys.exit(1)  
 
+    # Get basic run attributes
+    telescope=getTelescope(sys.argv[1])
+    startTime=getStartTime(sys.argv[1])
+    deltat=getDeltaT(sys.argv[1])
+
     # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
-    f = np.load(sys.argv[1])
-    ic = np.load(sys.argv[2] if len(sys.argv) == 3 else
-                 sys.argv[1].replace('foldspec', 'icount'))
+    if 'foldspec' in sys.argv[1]:
+        f = np.load(sys.argv[1])
+        ic = np.load(sys.argv[1].replace('foldspec', 'icount'))
+
+        # Collapse time axis
+        f=f[0,...]
+        ic=ic[0,...]
+
+        # Find populated bins
+        fullList=np.flatnonzero(ic.sum(0).sum(0))
+        w=f/ic[...,np.newaxis]
+
+        binWidth=deltat/f.shape[1]
+
+    elif 'waterfall' in sys.argv[1]:
+        w=np.load(sys.argv[1])
+        w=np.swapaxes(w,0,1)
+        fullList=range(w.shape[1])
+        binWidth=getWaterfallBinWidth(telescope,w.shape[0])
+        
+    else:
+        print "Error, unrecognized file type."
+        sys.exit()
     
     # Get basic run attributes
     telescope=getTelescope(sys.argv[1])
     startTime=getStartTime(sys.argv[1])
     deltat=getDeltaT(sys.argv[1])
     
-    #f,ic=rebin(f,ic,nBins=10000)
-
     # Set nNoiseBins to one per second if invalid value is given
     if nNoiseBins<1:
         nNoiseBins=int(deltat)
 
-    # Find populated bins
-    fullList=np.flatnonzero(ic.sum(0).sum(0))
-
     # Get timeseries to search for pulses
-    timeSeries=getTimeSeries(f,ic,nNoiseBins)
+    timeSeries=getTimeSeries(w,nNoiseBins)
 
     # Calculate additional information about run. Update start time
     # ignoring empty bins at beginning.
-    binWidth=float(deltat)/f.shape[2]
     nBins=len(timeSeries)
     startTime=getTime(fullList[0],binWidth,startTime)
 
@@ -231,8 +254,8 @@ if __name__ == "__main__":
 
     # Print all run information
     print "\nRun information:"
-    if len(fullList)<len(ic[0,0,:]):
-        emptyTime=(len(ic[0,0,:])-len(fullList))*binWidth
+    if len(fullList)<w.shape[1]:
+        emptyTime=(w.shape[1]-len(fullList))*binWidth
         print "\tIgnoring "+str(emptyTime)+" s of empty data."
     print "\tTelescope: ", telescope
     print "\tnBins: ", nBins
@@ -245,12 +268,12 @@ if __name__ == "__main__":
 
     # Find pulses with 10000 or fewer bins. Further resolve pulses if
     # finer binning is present.
-    if f.shape[2]>10000:
-        f_rebin,ic_rebin=rebin(f,ic,nBins=10000)
-        timeSeries_rebin=getTimeSeries(f_rebin,ic_rebin,nNoiseBins)
+    if w.shape[1]>10000:
+        w_rebin=rebin(w,nBins=10000)
+        timeSeries_rebin=getTimeSeries(w_rebin,nNoiseBins)
         pulseList=getPulses(timeSeries_rebin,threshold=threshold)
         pulseList=[(resolvePulse(
-                    timeSeries,pos*f.shape[2]/10000,binWidth=binWidth,
+                    timeSeries,pos*w.shape[1]/10000,binWidth=binWidth,
                     searchRadius=1.0/10000),height) 
                    for (pos,height) in pulseList]
     else:

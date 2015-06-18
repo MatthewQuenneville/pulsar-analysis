@@ -18,7 +18,7 @@ searchRes=1.0/10000
 # Normalize intensity in frequency channels
 normChan=True
 
-def dynSpec(f,ic,indices=None,normChan=False):
+def dynSpec(w,indices=None,normChan=False):
     # Finds the dynamic spectrum for foldspec and icounts arrays 'f'
     # and 'ic', over phase indices 'indices'. If 'normChan', then the
     # flux is normalized by the median in each frequency bin.
@@ -27,28 +27,16 @@ def dynSpec(f,ic,indices=None,normChan=False):
     if indices==None:
         indices=range(ic.shape[2])
 
-    # Normalize foldspec for 2 polarisations
-    if f.shape[-1]==4:
-        n=f[:,:,indices,:].sum(0)/(ic[:,:,indices].sum(0)[:,:,np.newaxis])
-
-    # Normalize foldspec for 1 polarisation
-    else:
-        n=f[:,:,indices].sum(0)/(ic[:,:,indices].sum(0)[:,:])
+    n=w[:,indices,...]
 
     # Normalize flux by noise in each frequency bin
     if normChan:        
-        n_noise=np.std(n,axis=1)
-        n/=n_noise[:,np.newaxis,...]
+        n_median=np.median(n,axis=1)
+        if w.shape[-1]==4:
+            n_median[...,(1,2)]=1
+        n/=n_median[:,np.newaxis,...]
         
     return n
-
-def getFrequencyBand(telescope):
-    # Returns frequency band of a given telescope
-
-    if telescope=="Jodrell Bank":
-        return (605.,615.)
-    elif telescope=="GMRT":
-        return (601.66666,618.33334)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -56,31 +44,49 @@ if __name__ == "__main__":
         # Run the code as eg: ./pulseSpec.py foldspec.npy.
         sys.exit(1)
 
-    foldspec=sys.argv[1]
-    icounts=foldspec.replace('foldspec', 'icount')
-        
-    # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
-    f = np.load(foldspec)
-    ic = np.load(icounts)
-        
     # Get run information
-    deltat=pf.getDeltaT(foldspec)
-    telescope=pf.getTelescope(foldspec)
-    startTime=pf.getStartTime(foldspec)
-    binWidth=float(deltat)/f.shape[2]
-    freqBand=getFrequencyBand(telescope)
+    deltat=pf.getDeltaT(sys.argv[1])
+    telescope=pf.getTelescope(sys.argv[1])
+    startTime=pf.getStartTime(sys.argv[1])
+    freqBand=pf.getFrequencyBand(telescope)
+
+    # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
+    if 'foldspec' in sys.argv[1]:
+        f = np.load(sys.argv[1])
+        ic = np.load(sys.argv[1].replace('foldspec', 'icount'))
+
+        # Collapse time axis
+        f=f[0,...]
+        ic=ic[0,...]
+
+        # Find populated bins
+        fullList=np.flatnonzero(ic.sum(0).sum(0))
+        w=f/ic[...,np.newaxis]
+
+        binWidth=deltat/f.shape[1]
+
+    elif 'waterfall' in sys.argv[1]:
+        w=np.load(sys.argv[1])
+        w=np.swapaxes(w,0,1)
+        fullList=range(w.shape[1])
+        binWidth=pf.getWaterfallBinWidth(telescope,w.shape[0])
+
+    else:
+        print "Error, unrecognized file type."
+        sys.exit()
 
     # Rebin to find giant pulses, then resolve pulses with finer binning
-    nSearchBins=min(int(round(deltat/binWidth)),
-                    int(round(deltat/searchRes)))
-    f_rebin,ic_rebin=pf.rebin(f,ic,nSearchBins)
-    timeSeries_rebin=pf.getTimeSeries(f_rebin,ic_rebin)
-    timeSeries=pf.getTimeSeries(f,ic)
-    pulseList=pf.getPulses(timeSeries_rebin,searchRes)
-    pulseList=[(pf.resolvePulse(
-                timeSeries,int(pos*searchRes/binWidth),
-                binWidth=binWidth,searchRadius=1.0/10000),height) 
-               for (pos,height) in pulseList]
+    nSearchBins=min(w.shape[1],int(round(deltat/searchRes)))
+    
+    w_rebin=pf.rebin(w,nSearchBins)
+    timeSeries_rebin=pf.getTimeSeries(w_rebin)
+    timeSeries=pf.getTimeSeries(w)
+    pulseList=pf.getPulses(timeSeries_rebin,binWidth=searchRes)
+    if nSearchBins<w.shape[1]:
+        pulseList=[(pf.resolvePulse(
+                    timeSeries,int(pos*w.shape[1]/nSearchBins),
+                    binWidth=binWidth,searchRadius=1.0/10000),height) 
+                   for (pos,height) in pulseList]
     try:
         largestPulse=pulseList[0][0]
     except IndexError:
@@ -94,11 +100,10 @@ if __name__ == "__main__":
     pulseRange=range(largestPulse-leadBins,largestPulse+trailBins)
         
     # Add entries to dynamic spectra and frequency band dictionaries
-    dynamicSpec=dynSpec(f,ic,indices=pulseRange,
-                                     normChan=normChan)
+    dynamicSpec=dynSpec(w,indices=pulseRange,normChan=normChan)
 
     # Plot each polarization if data is present
-    if f.shape[-1]==4:
+    if w.shape[-1]==4:
         for i in range(4):
             plt.imshow(dynamicSpec[:,:,i],aspect='auto',origin='lower',
                        interpolation='nearest',cmap=plt.get_cmap('Greys'),
