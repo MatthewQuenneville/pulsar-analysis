@@ -17,7 +17,7 @@ trailWidth=0.0003
 searchRes=1.0/10000
 
 # Use same intensity color scale
-sameColorScale=False
+sameColorScale=True
 
 # Scale data sets to have same intensity
 scaleData=False
@@ -28,7 +28,7 @@ normChan=True
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print "Usage: %s foldspec1 foldspec2" % sys.argv[0]
-        # Run the code as eg: ./plotspec.py foldspec1.npy foldspec2.py.
+        # Run the code as eg: ./dualPulseSpec.py foldspec1.npy foldspec2.py.
         sys.exit(1)
     
     # Declare observation list, and dynamic spectra, frequency band,
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     # Determine aspect ratio for plotting
     freqRange=[b-a for (a,b) in freqBand.values()]
     maxFreqRange=max(freqRange)
-    aspect=2*(leadBins+trailBins-1)/maxFreqRange
+    aspect=20*(leadBins+trailBins-1)/maxFreqRange
 
     # Apply scaling factor to second data set
     if scaleData:
@@ -176,11 +176,11 @@ if __name__ == "__main__":
             # Plot image and set titles
             im=axes.flat[j].imshow(dynamicSpec[jobs][:,:,i],origin='lower',
                        interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                       extent=[-leadBins,trailBins-1,ymin,ymax],
+                       extent=[-leadWidth*1e6,trailWidth*1e6,ymin,ymax],
                        aspect=aspect,vmin=vmin[j][i],vmax=vmax[j][i])
             axes.flat[j].set_title(pulseTimes[jobs]+'\n'+jobs[1]+
                                    ' ( Pol '+str(i)+' )')
-            axes.flat[j].set_xlabel('Time')
+            axes.flat[j].set_xlabel('Time (ns)')
             axes.flat[j].set_ylabel('Frequency (MHz)')
             # Plot color bar on each subplot if color scales are different
             if not sameColorScale:

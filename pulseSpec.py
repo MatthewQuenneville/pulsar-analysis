@@ -53,7 +53,7 @@ def getFrequencyBand(telescope):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print "Usage: %s foldspec" % sys.argv[0]
-        # Run the code as eg: ./plotspec.py foldspec.npy.
+        # Run the code as eg: ./pulseSpec.py foldspec.npy.
         sys.exit(1)
 
     foldspec=sys.argv[1]
@@ -102,11 +102,13 @@ if __name__ == "__main__":
         for i in range(4):
             plt.imshow(dynamicSpec[:,:,i],aspect='auto',origin='lower',
                        interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                       extent=[-leadBins,trailBins-1,freqBand[0],freqBand[1]])
+                       extent=[-leadWidth*1e6,trailWidth*1e6,
+                                freqBand[0],freqBand[1]])
             plt.title('Dynamic Spectrum (Polarization '+str(i)+')')
-            plt.xlabel('Time')
+            plt.xlabel('Time (ns)')
             plt.ylabel('Frequency (MHz)')                      
             plt.show()
+
     # Plot intensity if no polarization data is present
     else:
         plt.imshow(dynamicSpec[:,:],aspect='auto',origin='lower',
