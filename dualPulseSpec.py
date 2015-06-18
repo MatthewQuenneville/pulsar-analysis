@@ -84,7 +84,7 @@ if __name__ == "__main__":
         # Add entries to dynamic spectra and frequency band dictionaries
         dynamicSpec[obsList[-1]]=ps.dynSpec(f,ic,indices=pulseRange,
                                          normChan=normChan)
-        pulseTimes[obsList[-1]]=(pf.getTime(pulseList[0][0],searchRes,
+        pulseTimes[obsList[-1]]=(pf.getTime(pulseList[0][0],binWidth,
                                            startTime).iso[:-3]).split()[-1]
 
     # Determine aspect ratio for plotting
