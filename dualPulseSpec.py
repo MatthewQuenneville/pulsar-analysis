@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # Determine aspect ratio for plotting
     freqRange=[b-a for (a,b) in freqBand.values()]
     maxFreqRange=max(freqRange)
-    aspect=20*(leadBins+trailBins-1)/maxFreqRange
+    aspect=2e6*(leadWidth+trailWidth)/maxFreqRange
 
     # Apply scaling factor to second data set
     if scaleData:
