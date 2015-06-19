@@ -308,20 +308,11 @@ if __name__ == "__main__":
         plt.figure()
         indexList=getPeriod(currentMaxLoc,binWidth,nBins-1)
         timeList=indexList
-
-        # Plot line for peak intensity
-        plt.plot(timeList,[currentMax for i in indexList],'r--',
-                 label='Peak Intensity')
         
         # Plot pulse profile
         plt.plot(timeList,timeSeries[indexList],'k-',label='Pulse Profile')
 
-        # Plot line for intensity threshold
-        plt.plot(timeList,[threshold for i in indexList],'b--',
-                 label='Intensity Threshold')
-
         # Plot legend, write labels, set limits, and show plot
-        plt.legend()
         plt.ylim(0,ymax)
         plt.xlim(min(timeList),max(timeList))
         plt.xlabel('Time')
