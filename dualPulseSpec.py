@@ -7,10 +7,10 @@ import pulseFinder as pf
 import pulseSpec as ps
 
 # Time to display before pulse peak in seconds
-leadWidth=0.0001*2
+leadWidth=0.0001
 
 # Time to display after pulse peak in seconds
-trailWidth=0.0003*2
+trailWidth=0.0003
 
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.

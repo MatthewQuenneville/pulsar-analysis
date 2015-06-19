@@ -26,8 +26,11 @@ def dynSpec(w,indices=None,normChan=False):
     # Get indices to use, defaulting to all bins
     if indices==None:
         indices=range(ic.shape[2])
-
-    n=w[:,indices,...]
+    if w.shape[-1]==4:
+        Tsys=w[:,:,(0,3)].sum(-1).mean(1).mean(0)
+    else:
+        Tsys=w.mean(1).mean(0)
+    n=w[:,indices,...]/Tsys
 
     # Normalize flux by noise in each frequency bin
     if normChan:        
