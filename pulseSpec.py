@@ -38,6 +38,24 @@ def dynSpec(w,indices=None,normChan=False):
         
     return n
 
+def getRFIFreeBins(nChan,telescope):
+    freqBand=pf.getFrequencyBand(telescope)
+    if telescope=="Jodrell Bank":
+        RFI=[(605.,606.), (614.,615.)]
+    if telescope=="GMRT":
+        RFI=[(freqBand[0],freqBand[0]+1.0/1024)]
+    chanWidth=(freqBand[1]-freqBand[0])/nChan
+    bandMin=freqBand[0]
+    cleanChan=range(nChan)
+    for iBand in RFI:
+        for chan in range(nChan):
+            if not chan in cleanChan:
+                continue
+            binRng=(chan*chanWidth+bandMin,(chan+1)*chanWidth+bandMin)
+            if binRng[0]<=iBand[0]<=binRng[1] or iBand[0]<=binRng[1]<=iBand[1]:
+                cleanChan.remove(chan)
+    return cleanChan
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print "Usage: %s foldspec" % sys.argv[0]
@@ -92,7 +110,7 @@ if __name__ == "__main__":
     except IndexError:
         print "Error, no giant pulse found in "+telescope+" for start time:"
         print startTime.iso
-        sys.exit
+        sys.exit()
 
     # Find range of pulse to plot
     leadBins=int(leadWidth/binWidth)
@@ -102,13 +120,19 @@ if __name__ == "__main__":
     # Add entries to dynamic spectra and frequency band dictionaries
     dynamicSpec=dynSpec(w,indices=pulseRange,normChan=normChan)
 
+    # Get minimum and maximum intensity to plot, ignoring RFI channels
+    cleanChans=getRFIFreeBins(w.shape[0],telescope)
+    vmin=np.amin(np.amin(dynamicSpec[cleanChans,...],axis=1),axis=0)
+    vmax=np.amax(np.amax(dynamicSpec[cleanChans,...],axis=1),axis=0)
+
     # Plot each polarization if data is present
     if w.shape[-1]==4:
         for i in range(4):
             plt.imshow(dynamicSpec[:,:,i],aspect='auto',origin='lower',
                        interpolation='nearest',cmap=plt.get_cmap('Greys'),
                        extent=[-leadWidth*1e6,trailWidth*1e6,
-                                freqBand[0],freqBand[1]])
+                                freqBand[0],freqBand[1]],
+                       vmin=vmin[i], vmax=vmax[i])
             plt.title('Dynamic Spectrum (Polarization '+str(i)+')')
             plt.xlabel('Time (ns)')
             plt.ylabel('Frequency (MHz)')                      
@@ -118,7 +142,8 @@ if __name__ == "__main__":
     else:
         plt.imshow(dynamicSpec[:,:],aspect='auto',origin='lower',
                    interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                   extent=[-leadBins,trailBins-1,freqBand[0],freqBand[1]])
+                   extent=[-leadBins,trailBins-1,freqBand[0],freqBand[1]],
+                   vmin=vmin, vmax=vmax)
         plt.title('Dynamic Spectrum')
         plt.xlabel('Time')
         plt.ylabel('Frequency (MHz)') 

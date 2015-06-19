@@ -7,23 +7,23 @@ import pulseFinder as pf
 import pulseSpec as ps
 
 # Time to display before pulse peak in seconds
-leadWidth=0.0001
+leadWidth=0.0001*2
 
 # Time to display after pulse peak in seconds
-trailWidth=0.0003
+trailWidth=0.0003*2
 
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.
 searchRes=1.0/10000
 
 # Use same intensity color scale
-sameColorScale=False
+sameColorScale=True
 
 # Scale data sets to have same intensity
 scaleData=False
 
 # Normalize intensity in frequency channels
-normChan=True
+normChan=False
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -31,12 +31,12 @@ if __name__ == "__main__":
         # Run the code as eg: ./dualPulseSpec.py foldspec1.npy foldspec2.py.
         sys.exit(1)
     
-    # Declare observation list, and dynamic spectra, frequency band,
-    # and pulse time dictionaries
+    # Declare observation list, and dynamic spectra, frequency band, pulse time, and RFI-free channel dictionaries
     obsList=[]
     dynamicSpec={}
     freqBand={}
     pulseTimes={}
+    cleanChans={}
 
     # Loop through JB and GMRT files
     for ifilename in sys.argv[1:]:
@@ -108,6 +108,7 @@ if __name__ == "__main__":
                                          normChan=normChan)
         pulseTimes[obsList[-1]]=(pf.getTime(pulseList[0][0],binWidth,
                                            startTime).iso[:-3]).split()[-1]
+        cleanChans[obsList[-1]]=ps.getRFIFreeBins(w.shape[0],telescope)
 
     # Determine aspect ratio for plotting
     freqRange=[b-a for (a,b) in freqBand.values()]
@@ -126,19 +127,19 @@ if __name__ == "__main__":
 
     for i in range(4):
         if sameColorScale:
-            vmin[0].append(min(np.amin(dynamicSpec[obsList[0]][:,:,i]),
-                np.amin(dynamicSpec[obsList[1]][:,:,i])))
-            vmax[0].append(max(np.amax(dynamicSpec[obsList[0]][:,:,i]),
-                np.amax(dynamicSpec[obsList[1]][:,:,i])))
-            vmin[1].append(min(np.amin(dynamicSpec[obsList[0]][:,:,i]),
-                np.amin(dynamicSpec[obsList[1]][:,:,i])))
-            vmax[1].append(max(np.amax(dynamicSpec[obsList[0]][:,:,i]),
-                np.amax(dynamicSpec[obsList[1]][:,:,i])))
+            minVal=min([np.amin(dynamicSpec[iObs][cleanChans[iObs],:,i]) 
+                     for iObs in obsList])
+            maxVal=max([np.amax(dynamicSpec[iObs][cleanChans[iObs],:,i]) 
+                     for iObs in obsList])
+            vmin[0].append(minVal)
+            vmax[0].append(maxVal)
+            vmin[1].append(minVal)
+            vmax[1].append(maxVal)
         else:
-            vmin[0].append(np.amin(dynamicSpec[obsList[0]][:,:,i]))
-            vmax[0].append(np.amax(dynamicSpec[obsList[0]][:,:,i]))
-            vmin[1].append(np.amin(dynamicSpec[obsList[1]][:,:,i]))
-            vmax[1].append(np.amax(dynamicSpec[obsList[1]][:,:,i]))
+            vmin=[np.amin(dynamicSpec[iObs][cleanChans[iObs],:,i])
+                    for iObs in obsList]
+            vmax=[np.amax(dynamicSpec[iObs][cleanChans[iObs],:,i])
+                    for iObs in obsList]
 
     # Find difference in frequency range and channel widths
     upperDiff=freqBand[obsList[1]][0]-freqBand[obsList[0]][0]
