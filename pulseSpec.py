@@ -44,7 +44,7 @@ def dynSpec(w,indices=None,normChan=False):
 def getRFIFreeBins(nChan,telescope):
     freqBand=pf.getFrequencyBand(telescope)
     if telescope=="Jodrell Bank":
-        RFI=[(605.,606.), (614.,615.)]
+        RFI=[(605.,606.5), (614.,615.)]
     if telescope=="GMRT":
         RFI=[(freqBand[0],freqBand[0]+1.0/1024)]
     chanWidth=(freqBand[1]-freqBand[0])/nChan

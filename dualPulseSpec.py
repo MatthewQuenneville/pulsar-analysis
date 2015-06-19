@@ -17,7 +17,7 @@ trailWidth=0.0003
 searchRes=1.0/10000
 
 # Use same intensity color scale
-sameColorScale=True
+sameColorScale=False
 
 # Scale data sets to have same intensity
 scaleData=False
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     # Declare max and min z axis values for plotting
     vmin=[[],[]]
     vmax=[[],[]]
-
+    
     for i in range(4):
         if sameColorScale:
             minVal=min([np.amin(dynamicSpec[iObs][cleanChans[iObs],:,i]) 
@@ -136,10 +136,10 @@ if __name__ == "__main__":
             vmin[1].append(minVal)
             vmax[1].append(maxVal)
         else:
-            vmin=[np.amin(dynamicSpec[iObs][cleanChans[iObs],:,i])
-                    for iObs in obsList]
-            vmax=[np.amax(dynamicSpec[iObs][cleanChans[iObs],:,i])
-                    for iObs in obsList]
+            for j,iObs in enumerate(obsList):
+                vmin[j].append(np.amin(dynamicSpec[iObs][cleanChans[iObs],:,i]))
+                vmax[j].append(np.amax(dynamicSpec[iObs][cleanChans[iObs],:,i]))
+
 
     # Find difference in frequency range and channel widths
     upperDiff=freqBand[obsList[1]][0]-freqBand[obsList[0]][0]
