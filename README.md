@@ -30,4 +30,4 @@ python dualPulseSpec.py foldspec1 foldspec2
 Calculates and plot the correlation coefficient between the spectra for each pair of pulses in all the files in the given directory.
 Run as:
 
-python pulseCorr.py /path/to/files/
+python pulseCorr.py /path/to/MP/files/ /path/to/IP/files/
