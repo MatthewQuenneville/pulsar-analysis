@@ -147,7 +147,7 @@ def resolvePulse(timeSeries,pulseIndex,binWidth=None,searchRadius=1.0/10000):
     nBins=len(timeSeries)
     if binWidth==None:
         binWidth=1.0/nBins
-
+    
     # Ensure there are enough bins to further resolve pulse
     binRadius=int(round(searchRadius/binWidth))
     if binRadius==0:
@@ -157,12 +157,7 @@ def resolvePulse(timeSeries,pulseIndex,binWidth=None,searchRadius=1.0/10000):
     # Get range of bins to search
     binRange=range(pulseIndex-binRadius,pulseIndex+binRadius+1)  
 
-    # Get the ranges to average over
-    aveRanges=[[j for j in binRange if abs(i-j)*binWidth<pulseWidth/2] for i in binRange]
-
-    # Get smoothed time series, and return maximum
-    smoothTimeSeries=np.array([timeSeries[i].mean() for i in aveRanges])
-    return np.argmax(smoothTimeSeries)+pulseIndex-binRadius
+    return np.argmax(timeSeries[binRange])+pulseIndex-binRadius
 
 def getPulses(timeSeries,threshold=5,binWidth=None):
     # Gets a list of all pulses higher than the noise threshold
