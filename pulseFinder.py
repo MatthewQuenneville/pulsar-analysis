@@ -23,7 +23,7 @@ threshold=5
 
 # Set number of bins over which to normalize by noise. Use 0 for one
 # noise bin per second
-nNoiseBins=1
+nNoiseBins=0
 
 # Polarizations to sum over
 pol_select = (0, 3)
