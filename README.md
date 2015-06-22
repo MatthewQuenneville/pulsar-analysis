@@ -25,3 +25,9 @@ series of data.
 Run as:
 
 python dualPulseSpec.py foldspec1 foldspec2
+
+### pulseCorr.py: ###
+Calculates and plot the correlation coefficient between the spectra for each pair of pulses in all the files in the given directory.
+Run as:
+
+python pulseCorr.py /path/to/files/
