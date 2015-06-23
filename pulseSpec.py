@@ -16,7 +16,7 @@ trailWidth=0.0003
 searchRes=1.0/10000
 
 # Normalize intensity in frequency channels
-normChan=True
+normChan=False
 
 def dynSpec(w,indices=None,normChan=False):
     # Finds the dynamic spectrum for foldspec and icounts arrays 'f'
@@ -130,16 +130,45 @@ if __name__ == "__main__":
 
     # Plot each polarization if data is present
     if w.shape[-1]==4:
-        for i in range(4):
-            plt.imshow(dynamicSpec[:,:,i],aspect='auto',origin='lower',
-                       interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                       extent=[-leadWidth*1e6,trailWidth*1e6,
-                                freqBand[0],freqBand[1]],
-                       vmin=vmin[i], vmax=vmax[i])
-            plt.title('Dynamic Spectrum (Polarization '+str(i)+')')
-            plt.xlabel('Time (ns)')
-            plt.ylabel('Frequency (MHz)')                      
-            plt.show()
+        f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex='col',sharey='row')
+        im=ax1.imshow(dynamicSpec[:,:,0],aspect='auto',origin='lower',
+                   interpolation='nearest',cmap=plt.get_cmap('Greys'),
+                   extent=[-leadWidth*1e6,trailWidth*1e6,
+                            freqBand[0],freqBand[1]],
+                   vmin=vmin[0], vmax=vmax[0])
+        plt.colorbar(im,ax=ax1)
+        ax1.set_ylabel('Frequency (MHz)')
+        ax1.set_title('Polarization 0')
+
+        im=ax2.imshow(dynamicSpec[:,:,1],aspect='auto',origin='lower',
+                   interpolation='nearest',cmap=plt.get_cmap('Greys'),
+                   extent=[-leadWidth*1e6,trailWidth*1e6,
+                            freqBand[0],freqBand[1]],
+                   vmin=vmin[1], vmax=vmax[1])
+        plt.colorbar(im,ax=ax2)
+        ax2.set_title('Polarization 1')
+
+        im=ax3.imshow(dynamicSpec[:,:,2],aspect='auto',origin='lower',
+                   interpolation='nearest',cmap=plt.get_cmap('Greys'),
+                   extent=[-leadWidth*1e6,trailWidth*1e6,
+                            freqBand[0],freqBand[1]],
+                   vmin=vmin[2], vmax=vmax[2])
+        plt.colorbar(im,ax=ax3)
+        ax3.set_xlabel('Time (ns)')
+        ax3.set_ylabel('Frequency (MHz)')
+        ax3.set_title('Polarization 2')
+
+        im=ax4.imshow(dynamicSpec[:,:,3],aspect='auto',origin='lower',
+                   interpolation='nearest',cmap=plt.get_cmap('Greys'),
+                   extent=[-leadWidth*1e6,trailWidth*1e6,
+                            freqBand[0],freqBand[1]],
+                   vmin=vmin[3], vmax=vmax[3])
+        plt.colorbar(im,ax=ax4)
+        ax4.set_xlabel('Time (ns)')
+        ax4.set_title('Polarization 3')
+
+        plt.suptitle('Dynamic Spectra',size=16)
+        plt.show()
 
     # Plot intensity if no polarization data is present
     else:
@@ -151,3 +180,4 @@ if __name__ == "__main__":
         plt.xlabel('Time')
         plt.ylabel('Frequency (MHz)') 
         plt.show()
+        
