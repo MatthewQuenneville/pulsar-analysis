@@ -55,7 +55,7 @@ if __name__ == "__main__":
             ic=ic[0,...]
 
             # Find populated bins
-            fullList=np.flatnonzero(ic.sum(0).sum(0))
+            fullList=np.flatnonzero(ic.sum(0))
             w=f/ic[...,np.newaxis]
 
             binWidth=deltat/f.shape[1]

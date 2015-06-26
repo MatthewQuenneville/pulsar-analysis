@@ -83,8 +83,8 @@ if __name__ == "__main__":
         ic=ic[0,...]
 
         # Find populated bins
-        fullList=np.flatnonzero(ic.sum(0).sum(0))
-        w=f/ic[...,np.newaxis]
+        fullList=np.flatnonzero(ic.sum(0))
+        w=f[:,fullList,...]/ic[:,fullList,...,np.newaxis]
 
         binWidth=deltat/f.shape[1]
 
@@ -116,13 +116,13 @@ if __name__ == "__main__":
         print "Error, no giant pulse found in "+telescope+" for start time:"
         print startTime.iso
         sys.exit()
-
+    
     # Find range of pulse to plot
     leadBins=int(leadWidth/binWidth)
     trailBins=int(trailWidth/binWidth)       
     pulseRange=range(largestPulse-leadBins,largestPulse+trailBins)
     pulseRange_BG=range(largestPulse-2*leadBins-trailBins,largestPulse-leadBins)
-        
+    
     # Add entries to dynamic spectra and frequency band dictionaries
     dynamicSpec=dynSpec(w,indices=pulseRange,normChan=False)
     dynamicSpec_BG=dynSpec(w,indices=pulseRange_BG,normChan=False)
