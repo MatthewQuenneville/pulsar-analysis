@@ -89,7 +89,7 @@ if __name__ == "__main__":
         w_rebin=pf.rebin(w,nSearchBins)
         timeSeries_rebin=pf.getTimeSeries(w_rebin)
         timeSeries=pf.getTimeSeries(w)
-        pulseList=pf.getPulses(timeSeries_rebin,binWidth=searchRes,threshold=20)
+        pulseList=pf.getPulses(timeSeries_rebin,binWidth=searchRes,threshold=5)
         if nSearchBins<w.shape[1]:
             pulseList=[(pf.resolvePulse(
                         timeSeries,int(pos*w.shape[1]/nSearchBins),
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         w_rebin=pf.rebin(w,nSearchBins)
         timeSeries_rebin=pf.getTimeSeries(w_rebin)
         timeSeries=pf.getTimeSeries(w)
-        pulseList=pf.getPulses(timeSeries_rebin,binWidth=searchRes,threshold=20)
+        pulseList=pf.getPulses(timeSeries_rebin,binWidth=searchRes,threshold=5)
         if nSearchBins<w.shape[1]:
             pulseList=[(pf.resolvePulse(
                         timeSeries,int(pos*w.shape[1]/nSearchBins),

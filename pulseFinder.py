@@ -156,6 +156,7 @@ def resolvePulse(timeSeries,pulseIndex,binWidth=None,searchRadius=1.0/10000):
     
     # Get range of bins to search
     binRange=range(pulseIndex-binRadius,pulseIndex+binRadius+1)  
+    binRange=[i for i in binRange if i<len(timeSeries)]
 
     return np.argmax(timeSeries[binRange])+pulseIndex-binRadius
 
