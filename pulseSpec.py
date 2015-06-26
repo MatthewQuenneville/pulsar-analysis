@@ -4,16 +4,6 @@ import sys
 import numpy as np
 import matplotlib.pylab as plt
 import pulseFinder as pf
-from math import factorial
-import warnings
-doFits=True
-try:
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        from lmfit.models import ExponentialGaussianModel
-except ImportError:
-    print "lmfit module not found. Exponentially modified gaussian fits will not be performed."
-    doFits=False
 
 # Time to display before pulse peak in seconds
 leadWidth=0.0001
@@ -24,9 +14,6 @@ trailWidth=0.0003
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.
 searchRes=1.0/10000
-
-# Normalize intensity in frequency channels
-normChan=False
 
 def dynSpec(w,indices=None,normChan=False):
     # Finds the dynamic spectrum for foldspec and icounts arrays 'f'
@@ -53,6 +40,10 @@ def dynSpec(w,indices=None,normChan=False):
     return n
 
 def getRFIFreeBins(nChan,telescope):
+    # Returns a list of bins that should be roughly free of RFI. This
+    # is only approximate, and should only be used for things such as
+    # selecting vmax and vmin for plotting.
+
     freqBand=pf.getFrequencyBand(telescope)
     if telescope=="Jodrell Bank":
         RFI=[(605.,606.5), (614.,615.)]
@@ -133,21 +124,24 @@ if __name__ == "__main__":
     pulseRange_BG=range(largestPulse-2*leadBins-trailBins,largestPulse-leadBins)
         
     # Add entries to dynamic spectra and frequency band dictionaries
-    dynamicSpec=dynSpec(w,indices=pulseRange,normChan=normChan)
-    dynamicSpec_BG=dynSpec(w,indices=pulseRange_BG,normChan=normChan)
+    dynamicSpec=dynSpec(w,indices=pulseRange,normChan=False)
+    dynamicSpec_BG=dynSpec(w,indices=pulseRange_BG,normChan=False)
 
     # Get minimum and maximum intensity to plot, ignoring RFI channels
     cleanChans=getRFIFreeBins(w.shape[0],telescope)
     vmin=np.amin(np.amin(dynamicSpec[cleanChans,...],axis=1),axis=0)
     vmax=np.amax(np.amax(dynamicSpec[cleanChans,...],axis=1),axis=0)
+    
+    # Get min and max of time range:
+    tmin=-leadBins*binWidth
+    tmax=trailBins*binWidth
 
     # Plot each polarization if data is present
     if w.shape[-1]==4:
         f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex='col',sharey='row')
         im=ax1.imshow(dynamicSpec[:,:,0],aspect='auto',origin='lower',
                    interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                   extent=[-leadWidth*1e6,trailWidth*1e6,
-                            freqBand[0],freqBand[1]],
+                   extent=[tmin*1e6,tmax*1e6,freqBand[0],freqBand[1]],
                    vmin=vmin[0], vmax=vmax[0])
         plt.colorbar(im,ax=ax1)
         ax1.set_ylabel('Frequency (MHz)')
@@ -155,29 +149,26 @@ if __name__ == "__main__":
 
         im=ax2.imshow(dynamicSpec[:,:,3],aspect='auto',origin='lower',
                    interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                   extent=[-leadWidth*1e6,trailWidth*1e6,
-                            freqBand[0],freqBand[1]],
+                   extent=[tmin*1e6,tmax*1e6,freqBand[0],freqBand[1]],
                    vmin=vmin[3], vmax=vmax[3])
         plt.colorbar(im,ax=ax2)
         ax2.set_title('Polarization 3')
 
         im=ax3.imshow(dynamicSpec[:,:,1],aspect='auto',origin='lower',
                    interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                   extent=[-leadWidth*1e6,trailWidth*1e6,
-                            freqBand[0],freqBand[1]],
+                   extent=[tmin*1e6,tmax*1e6,freqBand[0],freqBand[1]],
                    vmin=vmin[1], vmax=vmax[1])
         plt.colorbar(im,ax=ax3)
-        ax3.set_xlabel('Time (ns)')
+        ax3.set_xlabel('Time (microseconds)')
         ax3.set_ylabel('Frequency (MHz)')
         ax3.set_title('Polarization 1')
 
         im=ax4.imshow(dynamicSpec[:,:,2],aspect='auto',origin='lower',
                    interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                   extent=[-leadWidth*1e6,trailWidth*1e6,
-                            freqBand[0],freqBand[1]],
+                   extent=[tmin*1e6,tmax*1e6,freqBand[0],freqBand[1]],
                    vmin=vmin[2], vmax=vmax[2])
         plt.colorbar(im,ax=ax4)
-        ax4.set_xlabel('Time (ns)')
+        ax4.set_xlabel('Time (microseconds)')
         ax4.set_title('Polarization 2')
 
         plt.suptitle('Dynamic Spectra',size=16)
@@ -187,127 +178,9 @@ if __name__ == "__main__":
     else:
         plt.imshow(dynamicSpec[:,:],aspect='auto',origin='lower',
                    interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                   extent=[-leadBins,trailBins-1,freqBand[0],freqBand[1]],
+                   extent=[tmin*1e6,tmax*1e6,freqBand[0],freqBand[1]],
                    vmin=vmin, vmax=vmax)
         plt.title('Dynamic Spectrum')
-        plt.xlabel('Time')
+        plt.xlabel('Time (microseconds)')
         plt.ylabel('Frequency (MHz)') 
-        plt.show()
-        
-    # Plot spectra
-    spec=dynamicSpec.sum(1)-dynamicSpec_BG.sum(1)
-    if spec.shape[-1]==4:
-        f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex='col',sharey='row')
-        ax1.plot(spec[:,0],'.')
-        ax1.set_ylabel('Intensity (Tsys)')
-        ax1.set_title('Polarization 0')
-
-        ax2.plot(spec[:,3],'.')
-        ax2.set_title('Polarization 3')
-
-        im=ax3.plot(spec[:,1],'.')
-        ax3.set_xlabel('Frequency Channel')
-        ax3.set_ylabel('Intensity (Tsys)')
-        ax3.set_title('Polarization 1') 
-
-        im=ax4.plot(spec[:,2],'.')
-        ax4.set_xlabel('Frequency Channel')
-        ax4.set_title('Polarization 2')
-
-        plt.suptitle('Spectra',size=16)
-        plt.show()
-        
-    else:
-        plt.plot(spec,'.')
-        plt.title('Spectrum')
-        plt.ylabel('Intensity (Tsys)')
-        plt.xlabel('Frequency Channel')
-        plt.show()
-
-    if spec.shape[-1]==4:
-        # Normalize intensity
-        spec1=2*spec[:,0]/np.mean(spec[:,0])
-        spec2=2*spec[:,3]/np.mean(spec[:,3])
-                               
-        # Plot histograms and plot if lmfit is found
-        xmin=min(min(spec2),min(spec1))
-        xmax=max(max(spec2),max(spec1))
-        
-        bins=np.linspace(np.floor(xmin),np.ceil(xmax),50)
-        binCenters=np.array([(bins[i+1]+bins[i])/2. for i in range(len(bins)-1)])
-        f,(ax1,ax2) = plt.subplots(1,2,sharex='col',sharey='row')
-        specHist1=ax1.hist(spec1,normed=True,bins=bins)
-        ax1.set_yscale('log')
-        if doFits:
-            expGaussMod=ExponentialGaussianModel()
-            pars=expGaussMod.guess(specHist1[0],x=binCenters)
-            pars['amplitude'].set(value=1.0,vary=False)
-            pars['gamma'].set(value=0.5,vary=False)
-            pars['center'].set(value=0.0,vary=False)
-            out=expGaussMod.fit(specHist1[0],pars,x=binCenters)
-            print "===================="
-            print "Polarization 0"
-            print "Constrained Parameters:"
-            print "Amplitude: 1.0"
-            print "Lambda: 0.5"
-            print "Center: 0.0\n"
-            print "Free Parameters:"
-            print "Sigma: ", out.params.valuesdict()['sigma']
-            print "====================\n"
-            ax1.plot(binCenters, out.best_fit)
-        ax1.set_xlim(min(bins),max(bins))
-        ax1.set_xlabel("Intensity")
-        specHist2=ax2.hist(spec2,normed=True,bins=bins)
-        if doFits:
-            expGaussMod=ExponentialGaussianModel()
-            pars=expGaussMod.guess(specHist2[0],x=binCenters)
-            pars['amplitude'].set(value=1.0,vary=False)
-            pars['gamma'].set(value=0.5,vary=False)
-            pars['center'].set(value=0.0,vary=False)
-            out=expGaussMod.fit(specHist2[0],pars,x=binCenters)
-            print "===================="
-            print "Polarization 3"
-            print "Constrained Parameters:"
-            print "Amplitude: 1.0"
-            print "Lambda: 0.5"
-            print "Center: 0.0\n"
-            print "Free Parameters:"
-            print "Sigma: ", out.params.valuesdict()['sigma']
-            print "====================\n"
-            ax2.plot(binCenters, out.best_fit)
-        ax2.set_yscale('log')
-        ax2.set_xlim(min(bins),max(bins))
-        ax2.set_xlabel("Intensity")
-        plt.show()
-    else:
-        # Normalize intensity
-        spec=spec/np.mean(spec)
-
-        # Plot histograms and fit if lmfit is found
-        xmin=min(spec)
-        xmax=max(spec)
-        
-        bins=np.linspace(np.floor(xmin),np.ceil(xmax),50)
-        binCenters=np.array([(bins[i+1]+bins[i])/2. for i in range(len(bins)-1)])
-        specHist=plt.hist(spec,normed=True,bins=bins)
-        if doFits:
-            expGaussMod=ExponentialGaussianModel()
-            pars=expGaussMod.guess(specHist[0],x=binCenters)
-            pars['amplitude'].set(value=1.0,vary=False)
-            pars['gamma'].set(value=0.5,vary=False)
-            pars['center'].set(value=0.0,vary=False)
-            out=expGaussMod.fit(specHist[0],pars,x=binCenters)
-            print "===================="
-            print "Polarization 3"
-            print "Constrained Parameters:"
-            print "Amplitude: 1.0"
-            print "Lambda: 0.5"
-            print "Center: 0.0\n"
-            print "Free Parameters:"
-            print "Sigma: ", out.params.valuesdict()['sigma']
-            print "====================\n"
-            ax2.plot(binCenters, out.best_fit)
-        plt.yscale('log')
-        plt.xlim(min(bins),max(bins))
-        plt.xlabel("Intensity")
         plt.show()

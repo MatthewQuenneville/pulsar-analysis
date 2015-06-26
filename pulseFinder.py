@@ -271,6 +271,7 @@ if __name__ == "__main__":
                     timeSeries,pos*w.shape[1]/10000,binWidth=binWidth,
                     searchRadius=1.0/10000),height) 
                    for (pos,height) in pulseList]
+
     else:
         pulseList=getPulses(timeSeries,threshold=threshold)
 

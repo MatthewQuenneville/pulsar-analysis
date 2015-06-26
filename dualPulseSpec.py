@@ -19,24 +19,20 @@ searchRes=1.0/10000
 # Use same intensity color scale
 sameColorScale=False
 
-# Scale data sets to have same intensity
-scaleData=False
-
-# Normalize intensity in frequency channels
-normChan=False
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print "Usage: %s foldspec1 foldspec2" % sys.argv[0]
         # Run the code as eg: ./dualPulseSpec.py foldspec1.npy foldspec2.py.
         sys.exit(1)
     
-    # Declare observation list, and dynamic spectra, frequency band, pulse time, and RFI-free channel dictionaries
+    # Declare observation list, and dynamic spectra, frequency band,
+    # pulse time, and RFI-free channel dictionaries
     obsList=[]
     dynamicSpec={}
     freqBand={}
     pulseTimes={}
     cleanChans={}
+    tRange={}
 
     # Loop through JB and GMRT files
     for ifilename in sys.argv[1:]:
@@ -105,21 +101,17 @@ if __name__ == "__main__":
         
         # Add entries to dynamic spectra and frequency band dictionaries
         dynamicSpec[obsList[-1]]=ps.dynSpec(w,indices=pulseRange,
-                                         normChan=normChan)
+                                         normChan=False)
         pulseTimes[obsList[-1]]=(pf.getTime(pulseList[0][0],binWidth,
                                            startTime).iso[:-3]).split()[-1]
         cleanChans[obsList[-1]]=ps.getRFIFreeBins(w.shape[0],telescope)
+        tRange[obsList[-1]]=(-binWidth*leadBins,binWidth*trailBins)
 
     # Determine aspect ratio for plotting
     freqRange=[b-a for (a,b) in freqBand.values()]
     maxFreqRange=max(freqRange)
     aspect=2e6*(leadWidth+trailWidth)/maxFreqRange
 
-    # Apply scaling factor to second data set
-    if scaleData:
-        scaleFactor=np.amax(dynamicSpec[obsList[0]][:,:,(0,3)].sum(-1))/np.amax(
-            dynamicSpec[obsList[1]][:,:,(0,3)].sum(-1))
-        dynamicSpec[obsList[1]]*=scaleFactor
 
     # Declare max and min z axis values for plotting
     vmin=[[],[]]
@@ -199,7 +191,8 @@ if __name__ == "__main__":
             # Plot image and set titles
             im=axes.flat[j].imshow(dynamicSpec[jobs][:,:,i],origin='lower',
                        interpolation='nearest',cmap=plt.get_cmap('Greys'),
-                       extent=[-leadWidth*1e6,trailWidth*1e6,ymin,ymax],
+                       extent=[tRange[jobs][0]*1e6,tRange[jobs][1]*1e6,
+                               ymin,ymax],
                        aspect=aspect,vmin=vmin[j][i],vmax=vmax[j][i])
             axes.flat[j].set_title(pulseTimes[jobs]+'\n'+jobs[1]+
                                    ' ( Pol '+str(i)+' )')
