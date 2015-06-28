@@ -26,6 +26,20 @@ Run as:
 
 python dualPulseSpec.py foldspec1 foldspec2
 
+### pulseProjFreq.py: ###
+
+Projects the dynamic spectrum for the largest giant pulse in a given time series of data onto the frequency axis, and performs analysis of this spectrum.
+Run as:
+
+python pulseProjFreq.py foldspec
+
+### pulseProjTime.py: ###
+
+Projects the dynamic spectrum for the largest giant pulse in a given time series of data onto the time axis, and performs analysis of this profile.
+Run as:
+
+python pulseProjTime.py foldspec
+
 ### pulseCorr.py: ###
 Calculates and plot the correlation coefficient between the spectra for each pair of pulses in all the files in the given directory.
 Run as:
