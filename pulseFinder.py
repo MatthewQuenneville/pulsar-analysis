@@ -45,7 +45,8 @@ def getFrequencyBand(telescope):
     if telescope=="Jodrell Bank":
         return (605.,615.)
     elif telescope=="GMRT":
-        return (601.66666,618.33334)
+        return (602.0,618.66667)
+        #return (601.66666,618.33334)
 
 def getWaterfallBinWidth(telescope,nChan):
     # Returns waterfall bin width for a given telescope observation
