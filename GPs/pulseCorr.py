@@ -3,8 +3,8 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import pulseFinder as pf
-import pulseSpec as ps
+import pulsarAnalysis.GPs.pulseFinder as pf
+import pulsarAnalysis.GPs.pulseSpec as ps
 import itertools
 import os
 
