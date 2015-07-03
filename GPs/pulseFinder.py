@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import os
 import numpy as np
 import matplotlib.pylab as plt
 import string
@@ -28,52 +29,60 @@ nNoiseBins=0
 # Polarizations to sum over
 pol_select = (0, 3)
 
-def loadFiles(fileList,folded=False):
-    if len(fileList)==0:
+def loadFiles(pathList,folded=False):
+    if len(pathList)==0:
         print "Usage: %s foldspec" % sys.argv[0]
         # Run the code as: ./script.py data_foldspec.npy.
         sys.exit(1) 
-
-    deltat=getDeltaT(fileList[0])
-    telescope=getTelescope(fileList[0])
-
-    for i,iFile in enumerate(fileList):
-        if folded:
-            f=np.load(iFile)
-            ic=np.load(iFile.replace('foldspec', 'icount'))
-            if i==0:
-                binWidth=deltat/f.shape[2]
-            if f.shape[-1]==4:
-                w=f/ic[...,np.newaxis]
-            else:
-                w=f/ic
+    runInfo={}
+    for i,iPath in enumerate(pathList):
+        if os.path.isdir(iPath):
+            iFileList=os.listdir(iPath)
         else:
-            if 'foldspec' in iFile:
+            iFileList=[iPath]
+        for j,jFile in enumerate(iFileList):
+            iFile=iPath+'/'+jFile
+            if i==0 and j==0:
+                deltat=getDeltaT(iFile)
+                telescope=getTelescope(iFile)
+                startTime=getStartTime(iFile)
+            if folded:
                 f=np.load(iFile)
                 ic=np.load(iFile.replace('foldspec', 'icount'))
-                f=f.sum(0)
-                ic=ic.sum(0)
                 if i==0:
-                    binWidth=deltat/f.shape[1]
+                    binWidth=deltat/f.shape[2]
                 if f.shape[-1]==4:
                     w=f/ic[...,np.newaxis]
                 else:
                     w=f/ic
-            elif 'waterfall' in iFile:
-                w=np.load(iFile)
-                w=np.swapaxes(w,0,1)
-                if i==0:
-                    binWidth=getWaterfallBinWidth(telescope,w.shape[0])
             else:
-                print "Error, the following file name is not recognized:"
+                if 'foldspec' in iFile:
+                    f=np.load(iFile)
+                    ic=np.load(iFile.replace('foldspec', 'icount'))
+                    f=f.sum(0)
+                    ic=ic.sum(0)
+                    if i==0:
+                        binWidth=deltat/f.shape[1]
+                    if f.shape[-1]==4:
+                        w=f/ic[...,np.newaxis]
+                    else:
+                        w=f/ic
+                elif 'waterfall' in iFile:
+                    w=np.load(iFile)
+                    w=np.swapaxes(w,0,1)
+                    if i==0:
+                        binWidth=getWaterfallBinWidth(telescope,w.shape[0])
+                else:
+                    print "Error, the following file name is not recognized:"
+                    print iFile
+            print i,j
+            if i==0 and j==0:
+                n=w
+            elif n.shape==w.shape:
+                n=n+w
+            else:
+                print "Error, shape mismatch in file:"
                 print iFile
-        if i==0:
-            n=w
-        elif n.shape==w.shape:
-            n=n+w
-        else:
-            print "Error, shape mismatch in file:"
-            print iFile
 
     if folded:
         if n.shape[-1]==4:
@@ -93,8 +102,12 @@ def loadFiles(fileList,folded=False):
             isNotNan=~np.isnan(n.sum(0))
             fullList=np.flatnonzero(isNotNan)
             n=n[:,isNotNan]
-
-    return n, binWidth, fullList
+    runInfo['binWidth']=binWidth
+    runInfo['telescope']=telescope
+    runInfo['deltat']=deltat
+    runInfo['startTime']=startTime
+    runInfo['fullList']=fullList
+    return n, runInfo
 
 def getTelescope(fileName):
     # Gets telescope name based on file name
@@ -262,13 +275,15 @@ def getPulses(timeSeries,threshold=5,binWidth=None):
 
 if __name__ == "__main__":
     # Load files
-    w,binWidth,fullList=loadFiles(sys.argv[1:])
+    w,runInfo=loadFiles(sys.argv[1:])
 
     # Get basic run attributes
-    telescope=getTelescope(sys.argv[1])
-    startTime=getStartTime(sys.argv[1])
-    deltat=getDeltaT(sys.argv[1])
-    
+    telescope=runInfo['telescope']
+    startTime=runInfo['startTime']
+    deltat=runInfo['deltat']
+    binWidth=runInfo['binWidth']
+    fullList=runInfo['fullList']
+
     # Set nNoiseBins to one per second if invalid value is given
     if nNoiseBins<1:
         nNoiseBins=int(deltat)

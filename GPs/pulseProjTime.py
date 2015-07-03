@@ -7,10 +7,10 @@ import pulsarAnalysis.GPs.pulseFinder as pf
 import pulsarAnalysis.GPs.pulseSpec as ps
 
 # Time to display before pulse peak in seconds
-leadWidth=0.0003
+leadWidth=0.0005
 
 # Time to display after pulse peak in seconds
-trailWidth=0.0009
+trailWidth=0.0015
 
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.
@@ -20,12 +20,13 @@ ignoreRFI=False
 
 if __name__ == "__main__":
     # Load files
-    w,binWidth,_=pf.loadFiles(sys.argv[1:])
+    w,runInfo=pf.loadFiles(sys.argv[1:])
 
     # Get run information
-    deltat=pf.getDeltaT(sys.argv[1])
-    telescope=pf.getTelescope(sys.argv[1])
-    startTime=pf.getStartTime(sys.argv[1])
+    binWidth=runInfo['binWidth']
+    deltat=runInfo['deltat']
+    telescope=runInfo['telescope']
+    startTime=runInfo['startTime']
     freqBand=pf.getFrequencyBand(telescope)
 
     # Rebin to find giant pulses, then resolve pulses with finer binning

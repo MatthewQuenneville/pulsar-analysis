@@ -16,8 +16,8 @@ searchRes=1.0/10000
 
 pulseWidth=0.0001 # 100 microseconds
 
-leadWidth=0.0001
-trailWidth=0.0003
+leadWidth=0.0005
+trailWidth=0.0015
 
 def expModGauss(x,sigma):
     mu=0.0
@@ -26,12 +26,13 @@ def expModGauss(x,sigma):
 
 if __name__ == "__main__":
     # Load files
-    w,binWidth,_=pf.loadFiles(sys.argv[1:])
+    w,runInfo=pf.loadFiles(sys.argv[1:])
 
     # Get run information
-    deltat=pf.getDeltaT(sys.argv[1])
-    telescope=pf.getTelescope(sys.argv[1])
-    startTime=pf.getStartTime(sys.argv[1])
+    binWidth=runInfo['binWidth']
+    deltat=runInfo['deltat']
+    telescope=runInfo['telescope']
+    startTime=runInfo['startTime']
     freqBand=pf.getFrequencyBand(telescope)
 
     # Rebin to find giant pulses, then resolve pulses with finer binning
