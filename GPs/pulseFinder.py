@@ -75,7 +75,6 @@ def loadFiles(pathList,folded=False):
                 else:
                     print "Error, the following file name is not recognized:"
                     print iFile
-            print i,j
             if i==0 and j==0:
                 n=w
             elif n.shape==w.shape:
