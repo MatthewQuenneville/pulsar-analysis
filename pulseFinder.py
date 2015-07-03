@@ -28,6 +28,74 @@ nNoiseBins=0
 # Polarizations to sum over
 pol_select = (0, 3)
 
+def loadFiles(fileList,folded=False):
+    if len(fileList)==0:
+        print "Usage: %s foldspec" % sys.argv[0]
+        # Run the code as: ./script.py data_foldspec.npy.
+        sys.exit(1) 
+
+    deltat=getDeltaT(fileList[0])
+    telescope=getTelescope(fileList[0])
+
+    for i,iFile in enumerate(fileList):
+        if folded:
+            f=np.load(iFile)
+            ic=np.load(iFile.replace('foldspec', 'icount'))
+            if i==0:
+                binWidth=deltat/f.shape[2]
+            if f.shape[-1]==4:
+                w=f/ic[...,np.newaxis]
+            else:
+                w=f/ic
+        else:
+            if 'foldspec' in iFile:
+                f=np.load(iFile)
+                ic=np.load(iFile.replace('foldspec', 'icount'))
+                f=f.sum(0)
+                ic=ic.sum(0)
+                if i==0:
+                    binWidth=deltat/f.shape[1]
+                if f.shape[-1]==4:
+                    w=f/ic[...,np.newaxis]
+                else:
+                    w=f/ic
+            elif 'waterfall' in iFile:
+                w=np.load(iFile)
+                w=np.swapaxes(w,0,1)
+                if i==0:
+                    binWidth=getWaterfallBinWidth(telescope,w.shape[0])
+            else:
+                print "Error, the following file name is not recognized:"
+                print iFile
+        if i==0:
+            n=w
+        elif n.shape==w.shape:
+            n=n+w
+        else:
+            print "Error, shape mismatch in file:"
+            print iFile
+
+    if folded:
+        if n.shape[-1]==4:
+            isNotNan=~np.isnan(n.sum(-1).sum(1).sum(0))
+            fullList=np.flatnonzero(isNotNan)
+            n=n[:,:,isNotNan,:]
+        else:
+            isNotNan=~np.isnan(n.sum(1).sum(0))
+            fullList=np.flatnonzero(isNotNan)
+            n=n[:,:,isNotNan]
+    else:
+        if n.shape[-1]==4:
+            isNotNan=~np.isnan(n.sum(-1).sum(0))
+            fullList=np.flatnonzero(isNotNan)
+            n=n[:,isNotNan,:]
+        else:
+            isNotNan=~np.isnan(n.sum(0))
+            fullList=np.flatnonzero(isNotNan)
+            n=n[:,isNotNan]
+
+    return n, binWidth, fullList
+
 def getTelescope(fileName):
     # Gets telescope name based on file name
 
@@ -122,7 +190,6 @@ def getTimeSeries(w,nNoiseBins=1):
     else:
         n = w
         
-
     # Normalize by median flux in each frequency bin
     n_median = nanMedian(n)
     nn = n / n_median[:,np.newaxis] - 1.
@@ -194,41 +261,9 @@ def getPulses(timeSeries,threshold=5,binWidth=None):
     return [(i,pulseDict[i]) for i in pulseList]
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: %s foldspec" % sys.argv[0]
-        # Run the code as: ./pulseFinder.py data_foldspec.npy.
-        sys.exit(1)  
+    # Load files
+    w,binWidth,fullList=loadFiles(sys.argv[1:])
 
-    # Get basic run attributes
-    telescope=getTelescope(sys.argv[1])
-    startTime=getStartTime(sys.argv[1])
-    deltat=getDeltaT(sys.argv[1])
-
-    # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
-    if 'foldspec' in sys.argv[1]:
-        f = np.load(sys.argv[1])
-        ic = np.load(sys.argv[1].replace('foldspec', 'icount'))
-
-        # Collapse time axis
-        f=f[0,...]
-        ic=ic[0,...]
-
-        # Find populated bins
-        fullList=np.flatnonzero(ic.sum(0).sum(0))
-        w=f/ic[...,np.newaxis]
-
-        binWidth=deltat/f.shape[1]
-
-    elif 'waterfall' in sys.argv[1]:
-        w=np.load(sys.argv[1])
-        w=np.swapaxes(w,0,1)
-        fullList=range(w.shape[1])
-        binWidth=getWaterfallBinWidth(telescope,w.shape[0])
-        
-    else:
-        print "Error, unrecognized file type."
-        sys.exit()
-    
     # Get basic run attributes
     telescope=getTelescope(sys.argv[1])
     startTime=getStartTime(sys.argv[1])

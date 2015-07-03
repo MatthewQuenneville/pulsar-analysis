@@ -7,10 +7,10 @@ import pulseFinder as pf
 import pulseSpec as ps
 
 # Time to display before pulse peak in seconds
-leadWidth=0.0001
+leadWidth=0.0003
 
 # Time to display after pulse peak in seconds
-trailWidth=0.0003
+trailWidth=0.0009
 
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.
@@ -19,41 +19,14 @@ searchRes=1.0/10000
 ignoreRFI=False
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: %s foldspec" % sys.argv[0]
-        # Run the code as eg: ./pulseSpec.py foldspec.npy.
-        sys.exit(1)
+    # Load files
+    w,binWidth,_=pf.loadFiles(sys.argv[1:])
 
     # Get run information
     deltat=pf.getDeltaT(sys.argv[1])
     telescope=pf.getTelescope(sys.argv[1])
     startTime=pf.getStartTime(sys.argv[1])
     freqBand=pf.getFrequencyBand(telescope)
-
-    # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
-    if 'foldspec' in sys.argv[1]:
-        f = np.load(sys.argv[1])
-        ic = np.load(sys.argv[1].replace('foldspec', 'icount'))
-
-        # Collapse time axis
-        f=f[0,...]
-        ic=ic[0,...]
-
-        # Find populated bins
-        fullList=np.flatnonzero(ic.sum(0))
-        w=f/ic[...,np.newaxis]
-
-        binWidth=deltat/f.shape[1]
-
-    elif 'waterfall' in sys.argv[1]:
-        w=np.load(sys.argv[1])
-        w=np.swapaxes(w,0,1)
-        fullList=range(w.shape[1])
-        binWidth=pf.getWaterfallBinWidth(telescope,w.shape[0])
-        
-    else:
-        print "Error, unrecognized file type."
-        sys.exit()
 
     # Rebin to find giant pulses, then resolve pulses with finer binning
     nSearchBins=min(w.shape[1],int(round(deltat/searchRes)))
@@ -138,9 +111,14 @@ if __name__ == "__main__":
 
         fit=[fitParams[2]+fitParams[1]*i+fitParams[0]*i*i 
              for i in corr_time[fitRange]]
-        print "Offset (R-L) = "+str(int(-fitParams[1]/2/fitParams[0]*1e3))+" ns"
+        delay=fitParams[1]/2/fitParams[0]*1e3
     else:
-        print "Offset (R-L) = "+str(int(corr_time[np.argmax(corr)]*1e3))+" ns"
+        delay=-corr_time[np.argmax(corr)]*1e3
+        
+    print "Offset (R-L): "
+    print "\t"+str(-delay)+ " ns ~=",
+    print str(-int(round(delay/60.)))+' bytes ~=',
+    print str(int(round(-299792458*delay*1e-9)))+' m / c.'
 
     plt.figure()
     plt.xlim(min(corr_time),max(corr_time))

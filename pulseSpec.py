@@ -62,41 +62,14 @@ def getRFIFreeBins(nChan,telescope):
     return cleanChan
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: %s foldspec" % sys.argv[0]
-        # Run the code as eg: ./pulseSpec.py foldspec.npy.
-        sys.exit(1)
+    # Load files
+    w,binWidth,_=pf.loadFiles(sys.argv[1:])
 
     # Get run information
     deltat=pf.getDeltaT(sys.argv[1])
     telescope=pf.getTelescope(sys.argv[1])
     startTime=pf.getStartTime(sys.argv[1])
     freqBand=pf.getFrequencyBand(telescope)
-
-    # Folded spectrum axes: time, frequency, phase, pol=4 (XX, XY, YX, YY).
-    if 'foldspec' in sys.argv[1]:
-        f = np.load(sys.argv[1])
-        ic = np.load(sys.argv[1].replace('foldspec', 'icount'))
-
-        # Collapse time axis
-        f=f[0,...]
-        ic=ic[0,...]
-
-        # Find populated bins
-        fullList=np.flatnonzero(ic.sum(0))
-        w=f[:,fullList,...]/ic[:,fullList,...,np.newaxis]
-
-        binWidth=deltat/f.shape[1]
-
-    elif 'waterfall' in sys.argv[1]:
-        w=np.load(sys.argv[1])
-        w=np.swapaxes(w,0,1)
-        fullList=range(w.shape[1])
-        binWidth=pf.getWaterfallBinWidth(telescope,w.shape[0])
-
-    else:
-        print "Error, unrecognized file type."
-        sys.exit()
 
     # Rebin to find giant pulses, then resolve pulses with finer binning
     nSearchBins=min(w.shape[1],int(round(deltat/searchRes)))
