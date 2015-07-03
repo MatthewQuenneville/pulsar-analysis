@@ -1,4 +1,4 @@
-# pulsar-analysis
+# pulsarAnalysis
 Analysis scripts for crab pulsar data
 
 Meant to be used on outputted files from Marten van Kerkwijk's scintellometry package:
