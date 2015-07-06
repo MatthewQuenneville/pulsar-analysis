@@ -130,12 +130,17 @@ if __name__ == "__main__":
 
         # Plot exponentially modified gaussian with parameters
         # estimated via fitting, and direct parameter estimation
+        normFactor1=(bins[1]-bins[0])*len(spec1)
+        weights=np.power(binEntries*normFactor1,0.5)/normFactor1
         popt,pcov=curve_fit(expModGauss,binCenters,binEntries,
-                            sigma=np.power(binEntries,0.5))
+                            sigma=weights,p0=0.1)
+        print "Polarization 0"
         if np.std(spec1)>1.0:
             ax1.plot(x_fine,expModGauss(x_fine,np.sqrt(np.var(spec1)-1.0)),label='Estimated')
+            print "Estimated sigma: "+str(np.sqrt(np.var(spec1)-1.0))
         if popt[0]>0.0:
             ax1.plot(x_fine,expModGauss(x_fine,popt[0]),label='Fitted')
+            print "Fitted sigma: "+str(popt[0])
         
         ax1.legend()
         ax1.set_xlim(min(bins),max(bins))
@@ -147,12 +152,17 @@ if __name__ == "__main__":
         binEntries=np.array([i for i in specHist2[0] if not i==0])
         # Plot exponentially modified gaussian with parameters
         # estimated via fitting, and direct parameter estimation
+        normFactor2=(bins[1]-bins[0])*len(spec2)
+        weights=np.power(binEntries*normFactor2,0.5)*len(spec2)
         popt,pcov=curve_fit(expModGauss,binCenters,binEntries,
-                            sigma=np.power(binEntries,0.5))
+                            sigma=weights,p0=0.1)
+        print "\nPolarization 3"
         if np.std(spec2)>1.0:
             ax2.plot(x_fine,expModGauss(x_fine,np.sqrt(np.var(spec2)-1.0)),label='Estimated')
+            print "Estimated sigma: "+str(np.sqrt(np.var(spec2)-1.0))
         if popt[0]>0.0:
             ax2.plot(x_fine,expModGauss(x_fine,popt[0]),label='Fitted')
+            print "Fitted sigma: "+str(popt[0])
         
         ax2.legend()
         ax2.set_title('Polarization 3')
@@ -174,12 +184,16 @@ if __name__ == "__main__":
         binEntries=np.array([i for i in specHist[0] if not i==0])
         # Plot exponentially modified gaussian with parameters
         # estimated via fitting, and direct parameter estimation
+        normFactor=(bins[1]-bins[0])*len(spec)
+        weights=np.power(binEntries*normFactor,0.5)*len(spec)
         popt,pcov=curve_fit(expModGauss,binCenters,binEntries,
-                            sigma=np.power(binEntries,0.5))
+                            sigma=weights,p0=0.1)
         if np.std(spec)>1.0:
             ax1.plot(x_fine,expModGauss(x_fine,np.sqrt(np.var(spec)-1.0)),label='Estimated')
+            print "Estimated sigma: "+str(np.sqrt(np.var(spec)-1.0))
         if popt[0]>0.0:
             plt.plot(x_fine,expModGauss(x_fine,popt[0]),label='Fitted')
+            print "Fitted sigma: "+str(popt[0])
         plt.legend()
         plt.yscale('log')
         plt.xlim(min(bins),max(bins))
