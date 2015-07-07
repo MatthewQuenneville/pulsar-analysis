@@ -41,7 +41,10 @@ def loadFiles(pathList,folded=False):
         else:
             iFileList=[iPath]
         for j,jFile in enumerate(iFileList):
-            iFile=iPath+'/'+jFile
+            if os.path.isdir(iPath):
+                iFile=iPath+'/'+jFile
+            else:
+                iFile=jFile
             if i==0 and j==0:
                 deltat=getDeltaT(iFile)
                 telescope=getTelescope(iFile)
@@ -285,7 +288,7 @@ if __name__ == "__main__":
 
     # Set nNoiseBins to one per second if invalid value is given
     if nNoiseBins<1:
-        nNoiseBins=int(deltat)
+        nNoiseBins=int(np.ceil(deltat))
 
     # Get timeseries to search for pulses
     timeSeries=getTimeSeries(w,nNoiseBins)
