@@ -33,33 +33,36 @@ telList=[
     ('S06R',(7,2)), ('S06L',(15,2))
     ]
 
-telDict={i[0]:i[1] for i in telList}
-telDict.update({i[1]:i[0] for i in telList})
+statDict={i[0]:'g' for i in telList}
 
-def getFileName(telName):
-    
-    node,voltStream=telDict[telName]
-    citanode=node/2+1
-    if node%2==0:
-        disk='a'
-    else:
-        disk='b'
-    filename='raw_voltage'+str(voltStream)+'.B0531+21_1.node'+str(node)+'.scan0'
-    path='cita'+str(citanode)+':/mnt/'+disk+'/gsbuser/'
-    return filename, path
+# Broken telescopes
+statDict['C00R']='m'
+statDict['C01R']='m'
+statDict['C02R']='m'
+statDict['C03R']='m'
+statDict['C12R']='m'
+statDict['E05L']='m'
 
-def getNodeVolt(telName):
-    return telDict[telName]
+statDict['W03R']='b'
+statDict['W04R']='b'
+statDict['W03L']='b'
+statDict['S03L']='b'
 
-def getTelName(node,volt):
-    return telDict[(node,volt)]
+statDict.update({i[1]:statDict[i[0]] for i in telList})
+
+def getStatus(dish):
+    return statDict[dish]
 
 if __name__ == '__main__':
     if len(sys.argv)==2:
         try:
-            filename,path=getFileName(sys.argv[1])
-            print "Filename: ", filename
-            print "Path: ", path
+            status=getStatus(sys.argv[1])
+            if status=='b':
+                print "Broken"
+            elif status=='m':
+                print "Missing"
+            else:
+                print "Good"
             sys.exit()
         except KeyError:
             print "Telescope name not recognized.\n"
@@ -68,8 +71,13 @@ if __name__ == '__main__':
             node=int(sys.argv[1])
             voltStream=int(sys.argv[2])
             try:
-                telName=getTelName(node,voltStream)
-                print "Telescope Name: "+telName
+                status=getStatus((node,voltStream))
+                if status=='b':
+                    print "Broken"
+                elif status=='m':
+                    print "Missing"
+                else:
+                    print "Good"
                 sys.exit()
             except KeyError:
                 print "Invalid node and voltage stream combination."
@@ -84,7 +92,6 @@ if __name__ == '__main__':
     print "python %s node voltageStream\n" % sys.argv[0]
     print "eg.\n"
     print "$ python GMRTNaming.py C01R"
-    print "\tFilename: "+str(getFileName('C01R')[0])
-    print "\tPath: "+str(getFileName('C01R')[1])
+    print "\tMissing"
     print "$ python GMRTNaming.py 0 2"
-    print "\tTelescope Name: C01R"
+    print "\tMissing"
