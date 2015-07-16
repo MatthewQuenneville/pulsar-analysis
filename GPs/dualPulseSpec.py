@@ -98,15 +98,18 @@ if __name__ == "__main__":
         leadBins=int(leadWidth/binWidth)
         trailBins=int(trailWidth/binWidth)       
         pulseRange=range(largestPulse-leadBins,largestPulse+trailBins)
+        offRange=range(largestPulse-2*leadBins-trailBins,largestPulse-leadBins)
         
         # Add entries to dynamic spectra and frequency band dictionaries
+        bg=ps.dynSpec(w,indices=offRange,normChan=False).mean(1,keepdims=True)
         dynamicSpec[obsList[-1]]=ps.dynSpec(w,indices=pulseRange,
-                                         normChan=False)
+                                            normChan=False)-bg
+                                            
         pulseTimes[obsList[-1]]=(pf.getTime(pulseList[0][0],binWidth,
-                                           startTime).iso[:-3]).split()[-1]
+                                            startTime).iso[:-3]).split()[-1]
         cleanChans[obsList[-1]]=ps.getRFIFreeBins(w.shape[0],telescope)
         tRange[obsList[-1]]=(-binWidth*leadBins,binWidth*trailBins)
-
+        
     # Determine aspect ratio for plotting
     freqRange=[b-a for (a,b) in freqBand.values()]
     maxFreqRange=max(freqRange)
@@ -131,11 +134,22 @@ if __name__ == "__main__":
             for j,iObs in enumerate(obsList):
                 vmin[j].append(np.amin(dynamicSpec[iObs][cleanChans[iObs],:,i]))
                 vmax[j].append(np.amax(dynamicSpec[iObs][cleanChans[iObs],:,i]))
-
+    if sameColorScale:
+        minVal_sum=min([np.amin(
+                    dynamicSpec[iObs][cleanChans[iObs],:,(0,3)].sum(-1)) 
+                      for iObs in obsList])
+        maxVal_sum=max([np.amax(
+                    dynamicSpec[iObs][cleanChans[iObs],:,(0,3)].sum(-1)) 
+                      for iObs in obsList])
+        vmin_sum=[minVal_sum,minVal_sum]
+        vmax_sum=[maxVal_sum,maxVal_sum]
+    else:
+        vmin_sum=[np.amin((dynamicSpec[iObs][cleanChans[iObs],...])[...,(0,3)].sum(-1)) for iObs in obsList]
+        vmax_sum=[np.amax((dynamicSpec[iObs][cleanChans[iObs],...])[...,(0,3)].sum(-1)) for iObs in obsList]
 
     # Find difference in frequency range and channel widths
-    upperDiff=freqBand[obsList[1]][0]-freqBand[obsList[0]][0]
-    lowerDiff=freqBand[obsList[1]][1]-freqBand[obsList[0]][1]
+    upperDiff=freqBand[obsList[0]][1]-freqBand[obsList[1]][1]
+    lowerDiff=freqBand[obsList[0]][0]-freqBand[obsList[1]][0]
     chanWidth=[]
     chanWidth.append(
         (freqBand[obsList[0]][1]-freqBand[obsList[0]][0])/
@@ -146,7 +160,7 @@ if __name__ == "__main__":
 
     if not chanWidth[0]==chanWidth[1]:
         print "Warning, channel widths are not equal."
-    
+
     # Pad smaller image with constant values to maintain aspect ratio
     if upperDiff>0:
         nBinsUpper=int(round(upperDiff/chanWidth[1]))
@@ -169,6 +183,7 @@ if __name__ == "__main__":
                                        mode='constant',
                                        constant_values=
                                        ((vmin[1],0),(0,0),(0,0)))
+        cleanChans[obsList[1]]=[i+nBinsLower for i in cleanChans[obsList[1]]]
     elif lowerDiff>0:
         nBinsLower=int(round(lowerDiff/chanWidth[0]))
         dynamicSpec[obsList[0]]=np.pad(dynamicSpec[obsList[0]],
@@ -176,6 +191,7 @@ if __name__ == "__main__":
                                        mode='constant',
                                        constant_values=
                                        ((vmin[0],0),(0,0),(0,0)))
+        cleanChans[obsList[0]]=[i+nBinsLower for i in cleanChans[obsList[1]]]
 
     # Loop through polarisations to plot
     for i in range(4):
@@ -196,7 +212,7 @@ if __name__ == "__main__":
                        aspect=aspect,vmin=vmin[j][i],vmax=vmax[j][i])
             axes.flat[j].set_title(pulseTimes[jobs]+'\n'+jobs[1]+
                                    ' ( Pol '+str(i)+' )')
-            axes.flat[j].set_xlabel('Time (ns)')
+            axes.flat[j].set_xlabel('Time (microseconds)')
             axes.flat[j].set_ylabel('Frequency (MHz)')
             # Plot color bar on each subplot if color scales are different
             if not sameColorScale:
@@ -212,3 +228,64 @@ if __name__ == "__main__":
         
         plt.show()
 
+    fig,axes = plt.subplots(nrows=1,ncols=2)
+
+    # Loop through telescopes
+    for j,jobs in enumerate(obsList):
+        
+        # Plot image and set titles
+        im=axes.flat[j].imshow(dynamicSpec[jobs][:,:,(0,3)].sum(-1),
+                               origin='lower',
+                               interpolation='nearest',
+                               #cmap=plt.get_cmap('Greys'),
+                               extent=[tRange[jobs][0]*1e6,tRange[jobs][1]*1e6,
+                                       ymin,ymax],
+                               aspect=aspect,
+                               vmin=vmin_sum[j],
+                               vmax=vmax_sum[j])
+        axes.flat[j].set_title(pulseTimes[jobs]+'\n'+jobs[1]+
+                               ' ( Intensity )')
+        axes.flat[j].set_xlabel('Time (microseconds)')
+        axes.flat[j].set_ylabel('Frequency (MHz)')
+        if not sameColorScale:
+            plt.colorbar(im,ax=axes.flat[j])
+    if sameColorScale:
+        cax = fig.add_axes([0.9,0.1,0.03,0.8])
+        fig.colorbar(im,cax=cax)
+    else:
+        plt.tight_layout()
+    
+    plt.show()
+
+    # Plot Spectra
+    freqList=[]
+    for j,jObs in enumerate(obsList):
+        spectrum=(dynamicSpec[jObs][cleanChans[jObs],...])[...,(0,3)].sum(-1).sum(1)     
+        spectrum=(spectrum-np.mean(spectrum))/np.std(spectrum)
+        chanWidth=(ymax-ymin)/dynamicSpec[jObs].shape[0]
+        freqList.append([ymin+chanWidth*i for i in cleanChans[jObs]])
+        # Plot image and set titles
+        plt.plot(freqList[-1],spectrum,label=jObs[1])
+    xmin=max([min(i) for i in freqList])
+    xmax=min([max(i) for i in freqList])
+    plt.xlim(xmin,xmax)
+    plt.legend()
+    plt.xlabel('Frequency (MHz)')
+    plt.ylabel('Intensity')
+    plt.show()
+
+    # Plot Profile
+    timeList=[]
+    for j,jObs in enumerate(obsList):
+        profile=(dynamicSpec[jObs][cleanChans[jObs],...])[...,(0,3)].sum(-1).sum(0)     
+        profile=(profile-np.mean(profile))/np.std(profile)
+        timeList.append(np.linspace(tRange[jObs][0],tRange[jObs][1],len(profile))*1e6)
+        # Plot image and set titles
+        plt.plot(timeList[-1],profile,label=jObs[1])
+    xmin=max([min(i) for i in timeList])
+    xmax=min([max(i) for i in timeList])
+    plt.xlim(xmin,xmax)
+    plt.legend()
+    plt.xlabel('Time (microseconds)')
+    plt.ylabel('Intensity')
+    plt.show()

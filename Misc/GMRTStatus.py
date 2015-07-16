@@ -53,6 +53,11 @@ statDict.update({i[1]:statDict[i[0]] for i in telList})
 def getStatus(dish):
     return statDict[dish]
 
+def getDishStatus(dish):
+    left=dish+'L'
+    right=dish+'R'
+    return statDict[right]+statDict[left]
+
 if __name__ == '__main__':
     if len(sys.argv)==2:
         try:
