@@ -75,7 +75,7 @@ if __name__ == "__main__":
                       reverse=True)[:nPulseBins]
 
     # Plot spectra    
-    spec=dynamicSpec[:,pulseBins,:].sum(1)-dynamicSpec_BG.mean(1)*nPulseBins
+    spec=dynamicSpec[:,pulseBins,...].sum(1)-dynamicSpec_BG.mean(1)*nPulseBins
 
     freqList=[freqBand[0]+i*(freqBand[1]-freqBand[0])/spec.shape[0] 
               for i in range(spec.shape[0])]
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         popt,pcov=curve_fit(expModGauss,binCenters,binEntries,
                             sigma=weights,p0=0.1)
         if np.std(spec)>1.0:
-            ax1.plot(x_fine,expModGauss(x_fine,np.sqrt(np.var(spec)-1.0)),label='Estimated')
+            plt.plot(x_fine,expModGauss(x_fine,np.sqrt(np.var(spec)-1.0)),label='Estimated')
             print "Estimated sigma: "+str(np.sqrt(np.var(spec)-1.0))
         if popt[0]>0.0:
             plt.plot(x_fine,expModGauss(x_fine,popt[0]),label='Fitted')
