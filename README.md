@@ -1,9 +1,12 @@
-# pulsarAnalysis
+# pulsarAnalysis #
 Analysis scripts for crab pulsar data
 
 Meant to be used on outputted files from Marten van Kerkwijk's scintellometry package:
 
 https://github.com/mhvk/scintellometry
+
+## GPs ##
+Assorted tools for giant pulse analysis
 
 ### pulseFinder.py: ###
 
@@ -45,3 +48,39 @@ Calculates and plot the correlation coefficient between the spectra for each pai
 Run as:
 
 python pulseCorr.py /path/to/MP/files/ /path/to/IP/files/
+
+
+## Misc ##
+Assorted helper tools
+
+### GMRTNaming.py ###
+Converts between node/raw voltage numbers and dish names for the various GMRT antennae.
+Run as:
+
+python GMRTNaming.py dishName
+or
+python GMRTNaming.py node rawVolt
+
+### GMRTStatus.py ###
+Gets the current status (good/broken/missing) of the various GMRT antennae.
+Run as:
+
+python GMRTNaming.py dishName
+or
+python GMRTNaming.py node rawVolt
+
+### GMRTDelay.py ###
+Gets the delay in integer number of samples for the giant pulse at ~15:01:45 in the various GMRT antennae.
+Run as:
+
+python GMRTDelay.py dishName
+or
+python GMRTDelay.py node rawVolt
+
+### voltToInt.py ###
+Adds all input voltageDump files with associated phases together, and outputs the intensity associated with these files.
+Run as:
+
+python voltToInt.py foldspec1 foldspec2 ...
+or
+python voltToInt.py path/to/foldspecs/
