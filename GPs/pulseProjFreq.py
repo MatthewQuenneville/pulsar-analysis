@@ -84,7 +84,7 @@ if __name__ == "__main__":
     if spec.shape[-1]==4:
         f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex='col',sharey='row')
         ax1.plot(freqList,spec[:,0],'.')
-        ax1.set_ylabel('Intensity (Tsys)')
+        ax1.set_ylabel('Intensity')
         ax1.set_title('Polarization 0')
 
         ax2.plot(freqList,spec[:,3],'.')
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
         ax3.plot(freqList,spec[:,1],'.')
         ax3.set_xlabel('Frequency (MHz)')
-        ax3.set_ylabel('Intensity (Tsys)')
+        ax3.set_ylabel('Intensity')
         ax3.set_title('Polarization 1') 
 
         ax4.plot(freqList,spec[:,2],'.')
@@ -103,10 +103,11 @@ if __name__ == "__main__":
         plt.show()
         
     else:
-        plt.plot(freqList,spec,'.')
+        plt.plot(freqList,spec)
+        plt.xlim(min(freqList),max(freqList))
         plt.title('Spectrum')
-        plt.ylabel('Intensity (Tsys)')
-        plt.xlabel('Frequency Channel')
+        plt.ylabel('Intensity')
+        plt.xlabel('Frequency (MHz)')
         plt.show()
         
     # Plot histogram of spectral noise

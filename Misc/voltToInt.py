@@ -100,7 +100,7 @@ def getSummedVoltages(pathList,rotation=True):
             w=rotateVoltage(w,phase)
             if not goodFileFound:
                 n=w
-                outfileName=outfileName.replace(dishName,'voltSum')
+                outfileName=outfileName.replace(dishName,'VoltSum')
                 goodFileFound=True
             elif n.shape==w.shape:
                 n=n+w

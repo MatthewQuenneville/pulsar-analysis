@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # Plot intensity if no polarization data is present
     else:
         plt.imshow(dynamicSpec[:,:],aspect='auto',origin='lower',
-                   interpolation='nearest',cmap=plt.get_cmap('Greys'),
+                   interpolation='nearest',#cmap=plt.get_cmap('Greys'),
                    extent=[tmin*1e6,tmax*1e6,freqBand[0],freqBand[1]],
                    vmin=vmin, vmax=vmax)
         plt.title('Dynamic Spectrum')

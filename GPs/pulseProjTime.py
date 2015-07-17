@@ -69,7 +69,7 @@ if __name__ == "__main__":
     if profile.shape[-1]==4:
         f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex='col',sharey='row')
         ax1.plot(timeList,profile[:,0])
-        ax1.set_ylabel('Intensity (Tsys)')
+        ax1.set_ylabel('Intensity')
         ax1.set_title('Polarization 0')
 
         ax2.plot(timeList,profile[:,3])
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
         ax3.plot(timeList,profile[:,1])
         ax3.set_xlabel('Time (microseconds)')
-        ax3.set_ylabel('Intensity (Tsys)')
+        ax3.set_ylabel('Intensity')
         ax3.set_title('Polarization 1') 
 
         ax4.plot(timeList,profile[:,2])
@@ -88,45 +88,46 @@ if __name__ == "__main__":
         plt.show()
         
     else:
-        plt.plot(timeList,profile,'.')
+        plt.plot(timeList,profile)
         plt.title('Profile')
-        plt.ylabel('Intensity (Tsys)')
-        plt.xlabel('Frequency Channel')
+        plt.ylabel('Intensity')
+        plt.xlabel('Time (microseconds)')
         plt.show()
     
-    # Calculate and plot correlation between polarizations
-    normProfile0=(profile[:,0]-np.mean(profile[:,0]))/np.std(profile[:,0])
-    normProfile3=(profile[:,3]-np.mean(profile[:,3]))/np.std(profile[:,3])
+    if w.shape[-1]==4:
+        # Calculate and plot correlation between polarizations
+        normProfile0=(profile[:,0]-np.mean(profile[:,0]))/np.std(profile[:,0])
+        normProfile3=(profile[:,3]-np.mean(profile[:,3]))/np.std(profile[:,3])
 
-    #corr=np.correlate(profile[:,0],profile[:,3],mode='same')
-    corr=np.correlate(normProfile0,normProfile3,mode='same')
-    corr_x=np.arange(-(len(corr)-1)/2,(len(corr)-1)/2+1)
-    corr=np.array([icorr/(profile.shape[0]-abs(corr_x[i])) 
-          for i,icorr in enumerate(corr)])
-    corr_time=binWidth*corr_x*1e6
-    sortedCorr=sorted(corr,reverse=True)
-    if sortedCorr[0]-sortedCorr[1]<0.05:
-        fitRange=np.arange(np.argmax(corr)-int(0.00002/binWidth),
-                       np.argmax(corr)+int(0.00002/binWidth))
-        fitParams=np.polyfit(corr_time[fitRange],corr[fitRange],2)
+        #corr=np.correlate(profile[:,0],profile[:,3],mode='same')
+        corr=np.correlate(normProfile0,normProfile3,mode='same')
+        corr_x=np.arange(-(len(corr)-1)/2,(len(corr)-1)/2+1)
+        corr=np.array([icorr/(profile.shape[0]-abs(corr_x[i])) 
+                       for i,icorr in enumerate(corr)])
+        corr_time=binWidth*corr_x*1e6
+        sortedCorr=sorted(corr,reverse=True)
+        if sortedCorr[0]-sortedCorr[1]<0.05:
+            fitRange=np.arange(np.argmax(corr)-int(0.00002/binWidth),
+                               np.argmax(corr)+int(0.00002/binWidth))
+            fitParams=np.polyfit(corr_time[fitRange],corr[fitRange],2)
 
-        fit=[fitParams[2]+fitParams[1]*i+fitParams[0]*i*i 
-             for i in corr_time[fitRange]]
-        delay=fitParams[1]/2/fitParams[0]*1e3
-    else:
-        delay=-corr_time[np.argmax(corr)]*1e3
-        
-    print "Offset (R-L): "
-    print "\t"+str(-delay)+ " ns ~=",
-    print str(-int(round(delay/60.)))+' bytes ~=',
-    print str(int(round(-299792458*delay*1e-9)))+' m / c.'
+            fit=[fitParams[2]+fitParams[1]*i+fitParams[0]*i*i 
+                 for i in corr_time[fitRange]]
+            delay=fitParams[1]/2/fitParams[0]*1e3
+        else:
+            delay=-corr_time[np.argmax(corr)]*1e3
+            
+        print "Offset (R-L): "
+        print "\t"+str(-delay)+ " ns ~=",
+        print str(-int(round(delay/60.)))+' bytes ~=',
+        print str(int(round(-299792458*delay*1e-9)))+' m / c.'
 
-    plt.figure()
-    plt.xlim(min(corr_time),max(corr_time))
-    plt.plot(corr_time,corr)
-    if sortedCorr[0]-sortedCorr[1]<0.05:
-        plt.plot(corr_time[fitRange],fit)
-    plt.ylim(-0.2,1.0)
-    plt.ylabel('Correlation')
-    plt.xlabel('Time Offset (microseconds)')
-    plt.show()
+        plt.figure()
+        plt.xlim(min(corr_time),max(corr_time))
+        plt.plot(corr_time,corr)
+        if sortedCorr[0]-sortedCorr[1]<0.05:
+            plt.plot(corr_time[fitRange],fit)
+        plt.ylim(-0.2,1.0)
+        plt.ylabel('Correlation')
+        plt.xlabel('Time Offset (microseconds)')
+        plt.show()
