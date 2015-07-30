@@ -9,7 +9,7 @@ from math import factorial
 import warnings
 from scipy.special import erfc
 from scipy.optimize import curve_fit
-
+from scipy.interpolate import lagrange
 # Resolution to use for searching in seconds. Must be larger than or
 # equal to phase bin size.
 searchRes=1.0/10000
@@ -23,6 +23,12 @@ def expModGauss(x,sigma):
     mu=0.0
     gamma=1.0
     return (gamma/2.)*np.exp((gamma/2)*(2*mu+gamma*sigma*sigma-2*x))*erfc((mu+gamma*sigma*sigma-x)/(np.sqrt(2)*sigma))
+
+def getPeak(x,w):
+    assert len(x)==3
+    assert len(w)==3
+    p=0.5*(w[0]-w[2])/(w[0]-2*w[1]+w[2])
+    return x[1]+p*(x[2]-x[1])
 
 if __name__ == "__main__":
     # Load files
@@ -204,9 +210,14 @@ if __name__ == "__main__":
 
     # Plot fourier transforms of spectra
     if spec.shape[-1]==4:
+        nChan=spec.shape[0]
+        spec=np.pad(spec,((spec.shape[0]/2,spec.shape[0]/2),(0,0)),
+                    mode='constant')
+
         f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex='col',sharey='row')
         sample=np.fft.fftshift(np.fft.fftfreq(
-                spec.shape[0],(freqBand[1]-freqBand[0])/spec.shape[0]))
+                spec.shape[0],(freqBand[1]-freqBand[0])/nChan))
+
         ax1.plot(sample,np.abs(np.fft.fftshift(np.fft.fft(spec[:,0]))),'.')
         ax1.set_ylabel('abs(Fourier Amplitude)')
         ax1.set_title('Polarization 0')
@@ -232,14 +243,16 @@ if __name__ == "__main__":
         plt.show()
         amplitude=np.abs(np.fft.fftshift(np.fft.fft(complexSpec)))
         amplitude=(amplitude-np.mean(amplitude))/np.std(amplitude)
-        delay=int(round(sample[np.argmax(amplitude)]*1000))
+
+        maxpoint=np.argmax(amplitude)
+        delay=getPeak(sample[maxpoint-1:maxpoint+2],amplitude[maxpoint-1:maxpoint+2])*1000
         if np.amax(amplitude)<5 or delay==0:
             print "No apparent offset!"
         else:
             print "Offset (R-L): "
             print "\t"+str(-delay)+ " ns ~=",
-            print str(-int(round(delay/60.)))+' bytes ~=',
-            print str(int(round(-299792458*delay*1e-9)))+' m / c.'
+            print str(-delay/60.)+' bytes',
+
     else:
         plt.figure()
         sample=np.linspace(0,spec.shape[0]/(freqBand[1]-freqBand[0])/2,spec.shape[0]/2)

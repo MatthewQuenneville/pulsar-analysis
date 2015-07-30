@@ -165,8 +165,10 @@ def getStartTime(fileName):
     # Gets start time of trial based on file name
     if 'foldspec' in fileName:
         dateString=fileName.split('foldspec')[1][1:24]
-    else:
+    elif 'waterfall' in fileName:
         dateString=fileName.split('waterfall')[1][1:24]
+    elif 'voltage' in fileName:
+        dateString=fileName.split('voltage')[1][1:24]
     return Time(dateString,format='isot',scale='utc',precision=6)
 
 def getDeltaT(fileName):

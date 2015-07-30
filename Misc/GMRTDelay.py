@@ -32,38 +32,40 @@ delayDict={
     'S04R':1285, 'S04L':1285,
     'S06R':1824, 'S06L':1824
     }
+
 phaseDict={
     'C00R':None, 'C00L':None,
     'C01R':None, 'C01L':None,
     'C02R':None, 'C02L':None,
     'C03R':None, 'C03L':None,
-    'C04R':-1.92147345128, 'C04L':None,
-    'C05R':-1.93948249924, 'C05L':None,
-    'C06R':2.58533634451, 'C06L':None,
-    'C08R':0.86195088483, 'C08L':None,
-    'C09R':2.75227219203, 'C09L':None,
-    'C10R':3.01835732895, 'C10L':None,
-    'C11R':1.72593989523, 'C11L':None,
+    'C04R':1.35324132657, 'C04L':None,
+    'C05R':-1.9325800295, 'C05L':None,
+    'C06R':-0.426757793185, 'C06L':None,
+    'C08R':0.867799992303, 'C08L':None,
+    'C09R':-0.261623438433, 'C09L':None,
+    'C10R':0.002098952482, 'C10L':None,
+    'C11R':1.7350886217, 'C11L':None,
     'C12R':None, 'C12L':None,
-    'C13R':1.08634428217, 'C13L':None,
-    'C14R':-0.431564490301, 'C14L':None,
-    'W01R':-3.00926927872, 'W01L':None,
-    'W02R':-2.55598012145, 'W02L':None,
+    'C13R':1.09505939177, 'C13L':None,
+    'C14R':2.82525095758, 'C14L':None,
+    'W01R':0.254046050469, 'W01L':None,
+    'W02R':-2.56150186701, 'W02L':None,
     'W03R':None, 'W03L':None,
     'W04R':None, 'W04L':None,
-    'W05R':1.91874074653, 'W05L':None,
-    'W06R':0.0, 'W06L':None,
-    'E02R':-1.99016301826, 'E02L':None,
-    'E03R':3.10585630128, 'E03L':None,
-    'E04R':2.91919766002, 'E04L':None,
-    'E05R':-0.513866059279, 'E05L':None,
-    'E06R':1.59861083576, 'E06L':None,
-    'S01R':0.260553884144, 'S01L':None,
-    'S02R':-0.916976705189, 'S02L':None,
-    'S03R':-1.81800484856, 'S03L':None,
-    'S04R':2.29972609609, 'S04L':None,
-    'S06R':0.960261316208, 'S06L':None
+    'W05R':-1.09183057758, 'W05L':None,
+    'W06R':-0.0, 'W06L':None,
+    'E02R':1.27555565589, 'E02L':None,
+    'E03R':0.0816068036961, 'E03L':None,
+    'E04R':-0.0735378475527, 'E04L':None,
+    'E05R':2.74345654823, 'E05L':None,
+    'E06R':-1.40434619073, 'E06L':None,
+    'S01R':0.260075860994, 'S01L':None,
+    'S02R':-0.898483592391, 'S02L':None,
+    'S03R':-1.8038799855, 'S03L':None,
+    'S04R':2.30091730097, 'S04L':None,
+    'S06R':-2.0510389114, 'S06L':None
     }
+
 delayDict.update({getNodeVolt(i):delayDict[i] for i in delayDict.keys()})
 phaseDict.update({getNodeVolt(i):phaseDict[i] for i in phaseDict.keys()})
 def getDelay(dish):
