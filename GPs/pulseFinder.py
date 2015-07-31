@@ -369,5 +369,5 @@ if __name__ == "__main__":
         plt.xlim(min(timeList),max(timeList))
         plt.xlabel('Time')
         plt.ylabel('Intensity')
-        plt.show()
+        plt.savefig('pulseProfile_'+pulseTime.iso+'.png')
         ### End plotting ###

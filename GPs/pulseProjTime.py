@@ -85,14 +85,14 @@ if __name__ == "__main__":
         ax4.set_title('Polarization 2')
 
         plt.suptitle('Profiles',size=16)
-        plt.show()
+        plt.savefig('profiles.png')
         
     else:
         plt.plot(timeList,profile)
         plt.title('Profile')
         plt.ylabel('Intensity')
         plt.xlabel('Time (microseconds)')
-        plt.show()
+        plt.savefig('profile.png')
     
     if w.shape[-1]==4:
         # Calculate and plot correlation between polarizations
@@ -130,4 +130,4 @@ if __name__ == "__main__":
         plt.ylim(-0.2,1.0)
         plt.ylabel('Correlation')
         plt.xlabel('Time Offset (microseconds)')
-        plt.show()
+        plt.savefig('autocorrelation.png')

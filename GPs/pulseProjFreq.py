@@ -106,7 +106,7 @@ if __name__ == "__main__":
         ax4.set_title('Polarization 2')
 
         plt.suptitle('Spectra',size=16)
-        plt.show()
+        plt.savefig('spectra.png')
         
     else:
         plt.plot(freqList,spec)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         plt.title('Spectrum')
         plt.ylabel('Intensity')
         plt.xlabel('Frequency (MHz)')
-        plt.show()
+        plt.savefig('spectrum.png')
         
     # Plot histogram of spectral noise
     if spec.shape[-1]==4:
@@ -175,7 +175,7 @@ if __name__ == "__main__":
         ax2.set_title('Polarization 3')
         ax2.set_xlim(min(bins),max(bins))
         ax2.set_xlabel("Intensity")
-        plt.show()
+        plt.savefig('spectralHists.png')
     else:
         # Normalize intensity
         specNorm=spec/np.mean(spec)
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         plt.yscale('log')
         plt.xlim(min(bins),max(bins))
         plt.xlabel("Intensity")
-        plt.show()
+        plt.savefig('spectralHist.png')
 
 
     # Plot fourier transforms of spectra
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         ax4.set_xlabel('Delay (microseconds)')
         ax4.set_title('Polarization 2')
         plt.suptitle('Fourier Transforms of Spectra')
-        plt.show()
+        plt.savefig('specFFTs.png')
         
         # Treat cross products as complex number and fourier transform
         complexSpec=spec[:,1]+1j*spec[:,2]
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         plt.xlabel('Delay (microseconds)')
         plt.ylabel('abs(Fourier Amplitude)')
         plt.title('Fourier transform of complex cross-spectra')
-        plt.show()
+        plt.savefig('complexSpecFFTs.png')
         amplitude=np.abs(np.fft.fftshift(np.fft.fft(complexSpec)))
         amplitude=(amplitude-np.mean(amplitude))/np.std(amplitude)
 
@@ -260,4 +260,4 @@ if __name__ == "__main__":
         plt.ylabel('abs(Fourier Amplitude)')
         plt.title('Fourier Transform of Spectrum')
         plt.xlabel('Delay (microseconds)')
-        plt.show()
+        plt.savefig('specFFT.png')

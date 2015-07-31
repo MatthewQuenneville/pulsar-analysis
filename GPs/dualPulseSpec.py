@@ -226,7 +226,7 @@ if __name__ == "__main__":
         else:
             plt.tight_layout()
         
-        plt.show()
+        plt.savefig('dualDynSpec_pol'+str(i)+'.png')
 
     fig,axes = plt.subplots(nrows=1,ncols=2)
 
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     else:
         plt.tight_layout()
     
-    plt.show()
+    plt.savefig('dualDynSpec_intensity.png')
 
     # Plot Spectra
     freqList=[]
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.xlabel('Frequency (MHz)')
     plt.ylabel('Intensity')
-    plt.show()
+    plt.savefig('dualSpectra.png')
 
     # Plot Profile
     timeList=[]
@@ -288,4 +288,4 @@ if __name__ == "__main__":
     plt.legend()
     plt.xlabel('Time (microseconds)')
     plt.ylabel('Intensity')
-    plt.show()
+    plt.savefig('dualProfiles.png')

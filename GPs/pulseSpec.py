@@ -146,7 +146,7 @@ if __name__ == "__main__":
         ax4.set_title('Polarization 2')
 
         plt.suptitle('Dynamic Spectra',size=16)
-        plt.show()
+        plt.savefig('dynSpecs.png')
 
     # Plot intensity if no polarization data is present
     else:
@@ -157,4 +157,4 @@ if __name__ == "__main__":
         plt.title('Dynamic Spectrum')
         plt.xlabel('Time (microseconds)')
         plt.ylabel('Frequency (MHz)') 
-        plt.show()
+        plt.savefig('dynSpec.png')

@@ -245,5 +245,5 @@ if __name__ == "__main__":
     plt.xscale('log')
     plt.ylabel('Correlation Coefficient')
     plt.xlabel('Time lag (s)')
-    plt.show()
+    plt.savefig('CorrCoef.png')
     
